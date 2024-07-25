@@ -6,8 +6,8 @@ export default defineConfig({
     base: '/YunDocs/',
     description: "YunDocs | Documented study notes have been developed for module documentation",
     head: [
-        ['link', {rel: 'icon', type: 'image/svg+xml', href: '/logo.jpg'}],
-        ['link', {rel: 'icon', type: 'image/png', href: '/logo.jpg'}],
+        ['link', {rel: 'icon', type: 'image/svg+xml', href: '/YunDocs/logo.jpg'}],
+        ['link', {rel: 'icon', type: 'image/png', href: '/YunDocs/logo.jpg'}],
         ['meta', {name: 'theme-color', content: '#5f67ee'}],
         // ['meta', {property: 'og:type', content: 'website'}],
         // ['meta', {property: 'og:locale', content: 'en'}],
