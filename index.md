@@ -9,16 +9,16 @@ hero:
   actions:
     - theme: brand
       text: "模块文档"
-      link: /markdown-examples
+      link: /modules
     - theme: alt
-      text: "学习"
-      link: /api-examples
+      text: "记录"
+      link: /study
     - theme: alt
       text: "GitHub"
       link: https://github.com/2214372851
     - theme: alt
       text: "Gitee"
-      link: https://github.com/2214372851
+      link: https://gitee.com/yinhanorsuli
   image:
     src: /logo.jpg
     alt: VitePress
