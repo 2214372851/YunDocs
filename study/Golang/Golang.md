@@ -150,9 +150,9 @@ func ArrTest() {
 
 	fmt.Println("****************************")
 	// 数组嵌套
-	nums3 := [2][2]int16{{1, 2}, {3, 4}}
-	nums4 := [2][2]int16{[2]int16{1, 2}, [2]int16{3, 4}}
-	fmt.Println(nums3, nums4)
+	// nums3 := [2][2]int16{{1, 2}, {3, 4}}
+	// nums4 := [2][2]int16{[2]int16{1, 2}, [2]int16{3, 4}}
+	// fmt.Println(nums3, nums4)
 }
 ```
 
