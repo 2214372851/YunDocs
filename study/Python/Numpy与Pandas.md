@@ -351,7 +351,7 @@ score['z'] = 0
 
 #### Data Frame
 
-Data Frame是一个[表格型]的数据结构，可以看做是[由Series组成的字典](共用同一个索引) 。Data Frame由按一定顺序排列的多行数据组成。设计初衷是将Series从一维拓展到多维，Data Frame既有行索引，也有列索引。
+Data Frame是一个表格型的数据结构，可以看做是,由Series组成的字典,共用同一个索引 。Data Frame由按一定顺序排列的多行数据组成。设计初衷是将Series从一维拓展到多维，Data Frame既有行索引，也有列索引。
 
 - 行索引：index
 

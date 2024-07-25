@@ -650,7 +650,7 @@ const x = new Vue({
 })
 ```
 
-![image-20220713220020832](./img/image-20220713220020832.png)
+![image-20220713220020832](/img/image-20220713220020832.png)
 
 ## Vue的一生：
 
@@ -1101,7 +1101,7 @@ createApp(App).mount('#app')    //确定容器前.mixin(mixin)全局混合
 <style scoped></style>
 ```
 
-![image-20220716141833486](./img/image-20220716141833486.png)
+![image-20220716141833486](/img/image-20220716141833486.png)
 
 ## 总结TodoList案例
 
@@ -1295,17 +1295,17 @@ data.hasOwnProperty('name')
 
 1.作用：在插入、更新或移除DOM元素时，在合适的时候给元素添加样式名
 
-![image-20220717165740380](./img/image-20220717165740380.png)
+![image-20220717165740380](/img/image-20220717165740380.png)
 
 3.写法：
 
-​	![image-20220717165959667](./img/image-20220717165959667.png)
+​	![image-20220717165959667](/img/image-20220717165959667.png)
 
 # Vue脚手架配置代理
 
-![image-20220717181025019](./img/image-20220717181025019.png)
+![image-20220717181025019](/img/image-20220717181025019.png)
 
-![image-20220717181136491](./img/image-20220717181136491.png)
+![image-20220717181136491](/img/image-20220717181136491.png)
 
 # Ajax请求
 
@@ -1748,7 +1748,7 @@ this.$store.getters['getList/bigSum']
 
 ### 可以把每个模块封装为js文件，记得暴露
 
-![image-20220719202816117](./img/image-20220719202816117.png)
+![image-20220719202816117](/img/image-20220719202816117.png)
 
 # 路由（router）
 
@@ -1762,9 +1762,9 @@ this.$store.getters['getList/bigSum']
 
 ​	1.应用插件 `Vue.use(VueRouter)`
 
-![image-20220720155200176](./img/image-20220720155200176.png)
+![image-20220720155200176](/img/image-20220720155200176.png)
 
-![image-20220720155217611](./img/image-20220720155217611.png)
+![image-20220720155217611](/img/image-20220720155217611.png)
 
 
 
@@ -2333,7 +2333,7 @@ watchEffect(()=>{
 
 ### Vue3生命周期
 
-![uTools_1658665750479](img/uTools_1658665750479.png)
+![uTools_1658665750479](/img/uTools_1658665750479.png)
 
 Vue3中可以继续使用Vue2中的生命周期钩子，但是有两个被改名字了：
 
