@@ -3,6 +3,7 @@ import {defineConfig} from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: "YunDocs",
+    base: '/YunDocs/',
     description: "YunDocs | Documented study notes have been developed for module documentation",
     head: [
         ['link', {rel: 'icon', type: 'image/svg+xml', href: '/logo.jpg'}],

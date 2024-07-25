@@ -1,8 +1,12 @@
 # Django学习笔记
+
 ## 1	创建项目
+
 	终端：django-admin startproject 项目名
 	Pycharm：新建项目选择Django
+
 ## 2	默认文件介绍
+
 	HelloWorld
 	|-- HelloWorld
 	|   |-- __init__.py
@@ -11,7 +15,9 @@
 	|   |-- urls.py		[URL和函数的对应关系](经常使用)
 	|   `-- wsgi.py	[接收网络请求](不用动)
 	`-- manage.py	[项目的管理，启动项目、创建app、数据管理](经常使用)
+
 ## 3，APP
+
 	创建APP：python mange.py startapp app名
 	
 	HelloWorld
@@ -30,10 +36,15 @@
 	|	|--tests.py		[固定，不用动](单元测试)
 	|	`--views.py		[重要](函数)
 	`-- manage.py
+
 ## 4	快速入手
-###  4.1	注册app[settings.py	]
+
+### 4.1	注册app[settings.py    ]
+
 settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps文件里的AppConfig类)
-###  4.2	编写URL和视图函数对应关系[urls.py]
+
+### 4.2	编写URL和视图函数对应关系[urls.py]
+
 ```python
 	#	导入app里的views文件
 	from app01 import views
@@ -47,79 +58,101 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 		path('index/',include("book.urls"))
 	]
 ```
-###  4.3	编写视图函数[views.py]
+
+### 4.3	编写视图函数[views.py]
+
 		def 函数名 （request）：
 			pass
-###  4.4	启动
+
+### 4.4	启动
+
 		终端：python manage.py runserver
 		Pycharm直接启动
+
 ## 5	templates目录(模板)
+
 	from django.shortcuts import render,HttpResponse
 	render:返回html
 	HttpResponse:返回字符
-###  5.1	在app目录下创建templates文件夹
+
+### 5.1	在app目录下创建templates文件夹
+
 		创建HTML文件
+
 ## 6	静态文件
+
 	图片
 	js
 	css
 	插件
-###  6.1	创建static文件夹
+
+### 6.1	创建static文件夹
+
 		一般文件夹类包含
 		img文件夹
 		js文件夹
 		css文件夹
 		plugins文件夹
-###  6.2	引用静态文件
+
+### 6.2	引用静态文件
+
 		{% load static %}
 		导入静态文件通常在HTML文件前加入{% load static %}，路径为{% static 'img/1.png' %}
-##  7	模板语法
-###  7.1	传入后端数据(data)
+
+## 7	模板语法
+
+### 7.1	传入后端数据(data)
 
 		data为字典
 		例：data = {'n1':'book'}		data = {'n1':data}
 		return render(request,'1.html',data)
-###  7.2	前端接收
+
+### 7.2	前端接收
+
 ```html
-	{{ 字典键 }}
-	例：{{ n1 }}
-	传入的是字典n1后面加上点和要取的值的索引(字典键)
-	{{ n1.n1 }}
-		取所有键
-		{% for child in n1.keys %}
-			<span>{{ child }}</span>
-		{% endfor %}
-		取所有值
-		{% for child in n1.values %}
-			<span>{{ child }}</span>
-		{% endfor %}
-		取所有键值
-		{% for k,v in n1.items %}
-			<span>{{ k }} = {{ v }}</span>
-		{% endfor %}
-		
-	传入的是列表n1后面加上点和要取的值的编号(列表值的位置0，1，2)
-	{{ n1.0 }}
-		可以用for循环把列表里的每个元素的值都取到
-		<div>
-			{% for child in n1 %}
-				<span>{{ child }}</span>
-			{% endfor %}
-		</div>
-		要有开头{% for child in n1 %}和结尾{% endfor %}接收值要用{{ }}
-	
-	支持判断语句
-		{% if n1 == 'xxx' %}
-			<h1>xxx</h1>
-		{% elif n1 == 'yyy' %}
-			<h1>yyy</h1>
-		{% else %}
-			<h1>kkk</h1>
+    {{ 字典键 }}
+例：{{ n1 }}
+传入的是字典n1后面加上点和要取的值的索引(字典键)
+{{ n1.n1 }}
+取所有键
+{% for child in n1.keys %}
+<span>{{ child }}</span>
+{% endfor %}
+取所有值
+{% for child in n1.values %}
+<span>{{ child }}</span>
+{% endfor %}
+取所有键值
+{% for k,v in n1.items %}
+<span>{{ k }} = {{ v }}</span>
+{% endfor %}
+
+传入的是列表n1后面加上点和要取的值的编号(列表值的位置0，1，2)
+{{ n1.0 }}
+可以用for循环把列表里的每个元素的值都取到
+<div>
+    {% for child in n1 %}
+    <span>{{ child }}</span>
+    {% endfor %}
+</div>
+要有开头{% for child in n1 %}和结尾{% endfor %}接收值要用{{ }}
+
+支持判断语句
+{% if n1 == 'xxx' %}
+<h1>xxx</h1>
+{% elif n1 == 'yyy' %}
+<h1>yyy</h1>
+{% else %}
+<h1>kkk</h1>
 ```
+
 ## 8	请求和响应
-###  8.1	请求类型
+
+### 8.1	请求类型
+
 	request.method
-###  8.2	接收数据（接收的数据为QueryDict类型）
+
+### 8.2	接收数据（接收的数据为QueryDict类型）
 
 	GET请求
 		request.GET
@@ -132,30 +165,46 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 		获取数据（单个项数据用get不用getlist）
 		request.POST.getlist('user')
 
-###  8.3	返回数据(需要导包)
+### 8.3	返回数据(需要导包)
+
 	from django.shortcuts import render,HttpResponse,redirect
 		render:返回html
 		HttpResponse:返回字符
 		redirect:重定向
-##  9	数据库操作
-###  9.1	安装第三方模块
+
+## 9	数据库操作
+
+### 9.1	安装第三方模块
+
 	pip install mysqlclient
-###  9.2	ORM
+
+### 9.2	ORM
+
 	可以创建、修改、删除数据库中的表
 	可以操作表里的数据
 	无法操作数据库
-####  9.2.1	创建删除数据库
-#####  9.2.1.1	创建数据库
+
+#### 9.2.1	创建删除数据库
+
+##### 9.2.1.1	创建数据库
+
 		create database 库名称；
 		create database if not exists 库名称；#如果不存在该库，则创建
-#####  9.2.1.2	删除数据库
+
+##### 9.2.1.2	删除数据库
+
 		drop database 库名称；
-#####  9.2.1.3	选择使用数据库
+
+##### 9.2.1.3	选择使用数据库
+
 		use 库名称；
+
 ##### 9.2.1.4	显示当前使用的数据库
 
 		select database（）；
-####  9.2.2	Django连接数据库
+
+#### 9.2.2	Django连接数据库
+
 		修改settings.py文件里的DATABASES
 			DATABASES = {
 				'default': {
@@ -167,8 +216,11 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 					'POST':'3306'		#数据库端口号
 					}
 				}
-####  9.2.3	Django操作表
-#####  9.2.3.1	创建表
+
+#### 9.2.3	Django操作表
+
+##### 9.2.3.1	创建表
+
 ```python
 	#在models.py文件里创建类
 		#表名为APP名_类名，例：app01_User
@@ -180,6 +232,7 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 			#time = models.DateTimeField()	包含年月日时分秒
             time = models.DateField()	#只包含年月日
 ```
+
 执行命令
 
 ```cmd
@@ -187,9 +240,7 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 		python manage.py migrate
 ```
 
-
-
-#####  9.2.3.2	删除表或列
+##### 9.2.3.2	删除表或列
 
 		注释了类重新执行命令
 		
@@ -203,18 +254,24 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 			新建数据
 			类名.objects.create(name=’张三’)
 
-#####  9.2.3.3	新建数据
+##### 9.2.3.3	新建数据
+
 		类名.objects.create(name='我',pasword='123',age='12')
 		如果有默认值则可以不写他的值
-#####  9.2.3.4	删除数据
+
+##### 9.2.3.4	删除数据
+
 		筛选删除
 						 条件
 			类名.objects.filter(id=1).delete()
 		全部删除
 						 全部
 			类名.objects.all().delete()
-#####  9.2.3.5	获取数据(QuerySet类型)
-######  9.2.3.5.1	QuerySet类型 -> 数据列表
+
+##### 9.2.3.5	获取数据(QuerySet类型)
+
+###### 9.2.3.5.1	QuerySet类型 -> 数据列表
+
 ```python
 	全部获取
 		类名.objects.all()
@@ -267,9 +324,7 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 类名.objects.filter(id=1).count()
 ```
 
-
-
-#####  9.2.3.6更新数据
+##### 9.2.3.6更新数据
 
 		筛选更新
 			类名.objects.filter(id=1).updata(age=999)
@@ -284,7 +339,6 @@ settings.py 中 INSTALLED_APPS 添加：app名.apps.AppConfig(app目录下apps�
 		数据库存入名称（加速查找，允许数据冗余）
 		约束
 			无约束
-			
 
 ```python
 id = models.IntegerField(verbose_name='部门id')
@@ -308,21 +362,17 @@ def __str__(self):
 
 			部门被删除员工处理
 			一起删除（级联删除）
-				
 
 ```
 depart = models.ForeignKey(to='depatments',to_field='id',on_delete=models.CASCADE)
 ```
 
 			置空
-				
 
 ```
 depart = models.ForeignKey(to='depatments',to_field='id',null=True,blank=True,on_delete=models.SET_NULL)
 	
 ```
-
-
 
 	Django里的约束
 		性别（1代表男，2代表女）
@@ -333,14 +383,10 @@ depart = models.ForeignKey(to='depatments',to_field='id',null=True,blank=True,on
 
 ![image-20220506232826504](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220506232826504.png)
 
-
-
 ```python
 在django里用get_字段名称_display()可以自动把1输出男2输出女
 obj.get_gender_display()
 ```
-
-
 
 ### 9.5	数据库时间
 
@@ -355,10 +401,6 @@ obj.time.strftime("%Y-%m-%d-%H-%M")		#%Y-%m-%d年月日
 ```python
 obj.time|date:"Y-m-d H:i:s"
 ```
-
-
-
-
 
 ## 10	urls.py
 
@@ -390,10 +432,10 @@ a.html
     {% block css %}{% endblock %}
 </head>
 <body>
-    <!--在母版里{% block content %}{% endblock %}类似于占位符-->
-    {% block content %}{% endblock %}
-    <!--在母版里{% block js %}{% endblock %}类似于占位符，用于一些子版里才用得到的js导入-->
-    {% block js %}{% endblock %}
+<!--在母版里{% block content %}{% endblock %}类似于占位符-->
+{% block content %}{% endblock %}
+<!--在母版里{% block js %}{% endblock %}类似于占位符，用于一些子版里才用得到的js导入-->
+{% block js %}{% endblock %}
 </body>
 </html>
 ```
@@ -406,18 +448,18 @@ a.html
 
 <!--在子版里{% block css %}{% endblock %}中间用来书写应该在母版里{% block css %}{% endblock %}的位置该写的css-->
 {% block css %}
-	<style></style>
+<style></style>
 {% endblock %}
 
 <!--在子版里{% block content %}{% endblock %}中间用来书写应该在母版里{% block content %}{% endblock %}的位置该写的HTML-->
 {% block content %}
-    <div>
+<div>
     title
-    </div>
+</div>
 {% endblock %}
 <!--在子版里{% block js %}{% endblock %}中间用来书写应该在母版里{% block js %}{% endblock %}的位置该写的JavaScrip-->
 {% block js %}
-	<script type="text/javascript"></script>
+<script type="text/javascript"></script>
 {% endblock %}
 ```
 
@@ -428,7 +470,7 @@ a.html
 - Form(字段全部需要自己写)
 - ModelForm(字段可以自动生成)
 
-###  12.1	Form(验证时方便)
+### 12.1	Form(验证时方便)
 
 #### 12.1.1	views.py
 
@@ -452,21 +494,23 @@ def user(request):
 #### 12.1.2	a.html
 
 ```html
+
 <from method="post">
     <!--就不用手写input标签，直接导入 -->
-	{{ from.user }}
+    {{ from.user }}
     {{ from.pwd }}
     {{ from.email }}
 </from>
 ```
 
 ```html
+
 <from method="post">
     <!--就不用手写input标签,可以循环类里的自动创建input标签 -->
-	{% for field in form %}
-    	{{field}}
+    {% for field in form %}
+    {{field}}
     {% endfor %}
-    
+
 </from>
 ```
 
@@ -525,28 +569,26 @@ def user(request):
 ```
 
 ```html
+
 <from method="post">
     <!--就不用手写input标签，直接导入 -->
     <!--{{ from.user.label }} 显示数据库verbose_name -->
-	{{ from.user.label }}:{{ from.user }}
+    {{ from.user.label }}:{{ from.user }}
     {{ from.pwd }}
     {{ from.email }}
 </from>
 ```
 
-
-
 ```html
+
 <from method="post">
     <!--就不用手写input标签，直接导入 -->
     <!--{{ from.user.label }} 显示数据库verbose_name -->
     {% for field in form %}
-		{{ field.label }}:{{ field }}
-	{% endfor %}
+    {{ field.label }}:{{ field }}
+    {% endfor %}
 </from>
 ```
-
-
 
 ### 12.4	数据校验与自动提交
 
@@ -575,14 +617,13 @@ def zhuce(request):
         #数据不合法校验失败
 ```
 
-
-
 ```html
+
 <from method="post">
     {% for field in form %}
-		{{ field.label }}:{{ field }}
-    	{{ field.errors.0 }}<!--显示第一个错误-->
-	{% endfor %}
+    {{ field.label }}:{{ field }}
+    {{ field.errors.0 }}<!--显示第一个错误-->
+    {% endfor %}
 </from>
 ```
 
@@ -650,8 +691,6 @@ class MyFrom(Form.ModelForm):
         }
 ```
 
-
-
 ##### 方式二（钩子方法）
 
 ```python
@@ -684,11 +723,9 @@ class MyFrom(Form.ModelForm):
 ```html
 <!--novalidate不让浏览器帮我们校验-->
 <form novalidate>
-    
+
 </form>
 ```
-
-
 
 ### 12.5	分页
 
@@ -724,8 +761,6 @@ if b:
 ```
 
 封装一个分页类运用到所有页面
-
-
 
 ```python
 class Pagination(object):
@@ -915,7 +950,8 @@ page_html = page_obj.page_html()
 <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 
 <!-- 时间选择器样式表 -->
-<link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
+      rel="stylesheet">
 
 
 <!-- jquery -->
@@ -931,8 +967,6 @@ page_html = page_obj.page_html()
 <script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
 ```
 
-
-
 - jquery版本：可选用 1.8.3 到 3.3.1（最新版样式出不来）
 - bootstrap版本：选用v3的
 
@@ -941,8 +975,9 @@ Script标签
 [参考](https://blog.csdn.net/weixin_42009898/article/details/89011223)
 
 ```html
+
 <script type="text/javascript">
-        $('#date').datetimepicker({
+    $('#date').datetimepicker({
         forceParse: 0,//设置为0，时间不会跳转1899，会显示当前时间。
         language: 'zh-CN',//显示中文
         format: 'yyyymmdd',//显示格式
@@ -951,7 +986,7 @@ Script标签
         autoclose: true,//选中自动关闭
         todayBtn: true//显示今日按钮
     })
-   $("#date").datetimepicker("setDate", new Date() );  //设置显示默认当天的时间
+    $("#date").datetimepicker("setDate", new Date());  //设置显示默认当天的时间
 </script>
 
 ```
@@ -1241,8 +1276,6 @@ class C2(MiddlewareMixin):
 
 ![image-20220508033210917](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220508033210917.png)
 
-
-
 #### 应用中间件
 
 在settings.py里的MIDDLEWARE列表里把中间件添加上去
@@ -1344,8 +1377,6 @@ def images_code(request):
 
 参考上面自定义字段
 
-
-
 ##### 验证码校验（登录的视图函数）
 
 ```python
@@ -1392,14 +1423,14 @@ Ajax：偷偷发送请求（不刷新）
 
 ```javascript
 $.ajax({
-    url:'xxx',
-    type:'get',
-    data:{
-        n1:12,
-        n2:23
+    url: 'xxx',
+    type: 'get',
+    data: {
+        n1: 12,
+        n2: 23
     },
     //发送成功自动执行
-    success:function(res){
+    success: function (res) {
         console.log(res);
     }
 })
@@ -1409,13 +1440,13 @@ $.ajax({
 
 ```javascript
 $.ajax({
-    url:'/task/ajax/',
-    type:'get',
-    data:{
-        n1:12,
-        n2:23
+    url: '/task/ajax/',
+    type: 'get',
+    data: {
+        n1: 12,
+        n2: 23
     },
-    success:function(res){
+    success: function (res) {
         console.log(res);
     }
 })
@@ -1433,13 +1464,13 @@ POST请求
 
 ```javascript
 $.ajax({
-    url:'/task/ajax/',
-    type:'post',
-    data:{
-        n1:12,
-        n2:23
+    url: '/task/ajax/',
+    type: 'post',
+    data: {
+        n1: 12,
+        n2: 23
     },
-    success:function(res){
+    success: function (res) {
         console.log(res);
     }
 })
@@ -1465,22 +1496,20 @@ Ajax请求的返回值
 
 ```javascript
 $.ajax({
-    url:'/task/ajax/',
-    type:'post',
-    data:{
-        n1:12,
-        n2:23
+    url: '/task/ajax/',
+    type: 'post',
+    data: {
+        n1: 12,
+        n2: 23
     },
-    dataType:'JSON'
-    success:function(res){
+    dataType: 'JSON'
+    success: function (res) {
         console.log(res);
-    	console.log(res.a);
-    	console.log(res.b);
+        console.log(res.a);
+        console.log(res.b);
     }
 })
 ```
-
-
 
 ```python
 def task_ajax(request):
@@ -1496,17 +1525,17 @@ def task_ajax(request):
 
 ```javascript
 $.ajax({
-    url:'/task/ajax/',
-    type:'post',
-    data:{
-        user:$('#user').val(),
-        password:$('#password').val()
+    url: '/task/ajax/',
+    type: 'post',
+    data: {
+        user: $('#user').val(),
+        password: $('#password').val()
     },
-    dataType:'JSON'
-    success:function(res){
+    dataType: 'JSON'
+    success: function (res) {
         console.log(res);
-    	console.log(res.a);
-    	console.log(res.b);
+        console.log(res.a);
+        console.log(res.b);
     }
 })
 ```
@@ -1514,8 +1543,6 @@ $.ajax({
 ### 自动写ajax传入后端的值
 
 ![image-20220508232152198](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220508232152198.png)
-
-
 
 ![image-20220508232228145](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220508232228145.png)
 
@@ -1537,45 +1564,33 @@ html
 
 ### 基本操作
 
-- request.FILES		 请求发送过来的文件
+- request.FILES 请求发送过来的文件
 
 ![image-20220509002043979](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220509002043979.png)
-
-
-
-
 
 不加enctype默认只是上传文件名，加上才上传了真正的文件
 
 ![image-20220509002303320](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220509002303320.png)
 
-
-
 ![image-20220509002455007](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220509002455007.png)
 
+- file_object.name 文件名
 
+- file_object.chunks 文件数据
 
-- file_object.name		文件名
-
-- file_object.chunks       文件数据
-
-- chunk              文件里的一部分数据
+- chunk 文件里的一部分数据
 
   一部分一部分的读取
 
-													用form生成input标签
+  												用form生成input标签
 
 ![image-20220509004540163](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220509004540163.png)
-
-
 
 写上第二行的就排除img标签不给他加上bootstrap样式
 
 ![image-20220509004755564](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220509004755564.png)
 
 上传文件校验的时候一定要加上files
-
-
 
 ![image-20220609234355937](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220609234355937.png)
 
@@ -1587,7 +1602,8 @@ html
 
 ### wsgi
 
-web服务器网关接口,是一套协议。用于接收用户请求并将请求进行初次封装，然后将请求交给web框架。(用人话来说就是，专门用于对浏览器和服务器通讯时封装请求)
+web服务器网关接口,是一套协议。用于接收用户请求并将请求进行初次封装，然后将请求交给web框架。(
+用人话来说就是，专门用于对浏览器和服务器通讯时封装请求)
 
 ### uwsgi
 
@@ -1630,17 +1646,18 @@ Project.objects.filter(dataPerson__uid=uid).prefetch_related(
             )
 ```
 
-> 这段代码主要用于获取 Django ORM 查询中的信息，并且已经针对性能做了优化。它涉及到的 Django ORM 查询的一些重要内容包括子查询(Subquery)，注解(annotate)，计数(Count)，以及预提取(prefetch_related)。下面我们逐一解析：
+> 这段代码主要用于获取 Django ORM 查询中的信息，并且已经针对性能做了优化。它涉及到的 Django ORM
+> 查询的一些重要内容包括子查询(Subquery)，注解(annotate)，计数(Count)，以及预提取(prefetch_related)。下面我们逐一解析：
 >
-> - Project.objects.filter(dataPerson__uid=uid): 
+> - Project.objects.filter(dataPerson__uid=uid):
+    >
+    >   这是一个基本的 Django ORM 查询，它从这些项目中选择出 dataPerson 的 uid 字段匹配指定 uid 的项目。
 >
->   这是一个基本的 Django ORM 查询，它从这些项目中选择出 dataPerson 的 uid 字段匹配指定 uid 的项目。
->
-> - prefetch_related: 
->
->   减少数据库的查询次数，这里的`batch_project_uid `是在定义模型时的`related_name`这样编写可以一次性获取到关联数据。
->
->   ```python
+> - prefetch_related:
+    >
+    >   减少数据库的查询次数，这里的`batch_project_uid `是在定义模型时的`related_name`这样编写可以一次性获取到关联数据。
+    >
+    >   ```python
 >   batchProject = models.ForeignKey(
 >           to=Project,
 >           to_field='uid',
@@ -1650,40 +1667,44 @@ Project.objects.filter(dataPerson__uid=uid).prefetch_related(
 >       )
 >   ```
 >
->   
 >
-> - Prefetch 对象: 
 >
->   这可以用于进一步定制`prefetch_related`的查询，`queryset`参数就是查询语句。
+> - Prefetch 对象:
+    >
+    >   这可以用于进一步定制`prefetch_related`的查询，`queryset`参数就是查询语句。
 >
-> - annotate: 
+> - annotate:
+    >
+    >   annotate 用于在每个 Batch 对象上生成两个新的字段，max_data 和 min_data。
+    >
+    >
+- max_data=Count('data_batch_uid'):
+  >
+  >     这里 Count聚合函数计算每个 Batch 对象的相关 Data 对象的数量 ('data_batch_uid')。
 >
->   annotate 用于在每个 Batch 对象上生成两个新的字段，max_data 和 min_data。
+>   - min_data=Subquery(...):
+      >
+      >     这里 Subquery 是子查询。它是一个嵌套于主查询中的查询，用于生成另一个临时表。
+      >
+      >
+- Data.objects.filter(dataBatch=OuterRef('uid'), tagger__isnull=False):
+  >
+  >       这介绍了子查询的过滤条件，它只包含那些 Data 对象的 dataBatch 字段与 外部 Batch 对象的 uid 相等，同时 tagger
+  字段不为空的 Data 对象。
 >
->   - max_data=Count('data_batch_uid'): 
+>     - .values('dataBatch'):
+        >
+        >       这指定了子查询的分组条件，它根据 dataBatch 字段对查询结果进行分组。
 >
->     这里 Count聚合函数计算每个 Batch 对象的相关 Data 对象的数量 ('data_batch_uid')。
+>     - .annotate(c=Count('uid')):
+        >
+        >       这会添加一个注解结果，通过计算每一个组的 uid 字段的数量。
 >
->   - min_data=Subquery(...): 
+>     - .values('c'):
+        >
+        >       这返回最后的子查询结果，即每一个组的 uid 字段的数量。
 >
->     这里 Subquery 是子查询。它是一个嵌套于主查询中的查询，用于生成另一个临时表。
->
->     - Data.objects.filter(dataBatch=OuterRef('uid'), tagger__isnull=False): 
->
->       这介绍了子查询的过滤条件，它只包含那些 Data 对象的 dataBatch 字段与 外部 Batch 对象的 uid 相等，同时 tagger 字段不为空的 Data 对象。
->
->     - .values('dataBatch'): 
->
->       这指定了子查询的分组条件，它根据 dataBatch 字段对查询结果进行分组。
->
->     - .annotate(c=Count('uid')): 
->
->       这会添加一个注解结果，通过计算每一个组的 uid 字段的数量。
->
->     - .values('c'): 
->
->       这返回最后的子查询结果，即每一个组的 uid 字段的数量。
->
-> 所有的这些条件都是在构建 SQL 查询时被评估的。返回的结果是一个 QuerySet 对象，代表满足给定条件的 Project 对象集合。每个 Project 对象还有一个附带的关联 Batch 对象集合，且这些 Batch 对象每个都有两个额外的字段 max_data 和 min_data。
+> 所有的这些条件都是在构建 SQL 查询时被评估的。返回的结果是一个 QuerySet 对象，代表满足给定条件的 Project 对象集合。每个
+> Project 对象还有一个附带的关联 Batch 对象集合，且这些 Batch 对象每个都有两个额外的字段 max_data 和 min_data。
 >
 > 总的来说，这段代码的主要目的是优化数据库查询性能，通过减少数据库查询的总次数来提高数据处理速度。
