@@ -1,3 +1,9 @@
+---
+next:
+  text: '快速开始(V2)'
+  link: '/modules/yundownload/v2-quickstart'
+---
+
 # Yun download
 
 ------

@@ -139,6 +139,12 @@ export default defineConfig({
             prev: '上一篇',
             next: '下一篇',
         },
+        lastUpdated: {
+            text: "上次更新"
+        },
+        editLink: {
+            pattern: 'https://github.com/2214372851/YunDocs/blob/main/:path'
+        },
 
     }
 })
