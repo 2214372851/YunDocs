@@ -1084,6 +1084,15 @@ def test(reqeust):
 
 > 如果执行器和django不在同一服务器，那么celery代码应该拷贝两份，一份用于调度，一份用于执行
 
+### `Celery 5.0`各环境运行命令
+
+在`windows`环境下需要依赖eventlet
+
+`celery --app=YouAppName worker -P evenlet -l INFO`
+
+`Linux`环境
+
+`celery --app=YouAppName worker -l INFO`
 
 
 ## 十、协程&asyncio&异步编程

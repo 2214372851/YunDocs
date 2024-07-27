@@ -31,6 +31,56 @@ lst = []
 s = "".join(lst)
 ```
 
+## 函数重试器
+
+最强大的重试模块
+
+`pip install tenacity`
+
+```python
+from tenacity import retry, stop_after_attempt, wait_fixed, before_sleep_log, retry_if_exception_type
+
+# stop_after_attempt当函数task重试3次后还是失败就停止重试并抛出错误, stop_after_delay重试10秒后就停止不进行重试，可以组合使用
+# wait_fixed每次重试等待2秒, wait_random(min=1, max=5) 一到五秒随机等待
+# before_sleep会在每次重试前等待，before_sleep_log(logger)用日志记录等待时间
+# retry自定义重试条件, retry_if_exception_type这里指定了只有IOError错误才进行重试, retry_if_result(callback)接收一个函数函数的参数的task函数的返回值函数返回bool满足才进行重试
+@retry(stop=stop_after_delay(10) | stop_after_attempt(3), wait=wait_fixed(2), before_sleep=before_sleep_log(logger), retry=retry_if_exception_type(IOError))
+def task():
+    raise Exception("task error")
+
+```
+
+## 异步文件操作
+
+基于`asyncio`的异步文件操作库
+
+`pip install aiofiles`
+
+```python
+import aiofiles
+import asyncio
+
+
+file_path = '/tmp/tmp.txt'
+
+async def read_file(path: str) -> str:
+    async with aiofiles.open(path) as af:
+        return await af.read()
+
+result = asyncio.run(read_file(file_path))
+```
+
+## 字符编码检测模块
+
+`pip install chardet`
+
+```python
+import chardet
+
+my_string = b'hello word'
+print(chardet.detect(my_string))
+# {'encoding': 'ascii', 'confidence': 1.0, 'language': ''}
+```
 
 
 ## 格式化
@@ -40,6 +90,58 @@ s = "".join(lst)
 #%s是字符串，%d是整数
 '我今年%d岁了'%(2)
 ```
+
+## markdown 文档网站
+
+`pip install mkdocs`
+
+在项目根目录创建`mkdocs.yml`文件
+
+结构为：
+```
+mkdocs.yml
+docs/
+    index.md
+```
+
+`mkdocs.yml`模板
+
+其中material是mkdocs的主题需要单独安装
+
+`pip install mkdocs-material`
+
+可以通过配置插件`git-revision-date-localized`根据git提交来显示文档修改时间
+```yaml
+site_name: Yun download
+site_url: https://2214372851.github.io/yundownload/
+repo_url: https://github.com/2214372851/yundownload
+copyright: Copyright 2021-2024
+repo_name: 2214372851/yundownload
+
+nav:
+  - 介绍: "index.md"
+  - 快速入门(0.2.X): "v2-quickstart.md"
+  - 快速入门(0.3.X): "v3-quickstart.md"
+
+theme:
+  name: material
+  language: zh
+
+plugins:
+  - git-revision-date-localized
+  - search:
+      lang: ru
+```
+
+
+按照前端惯例`docs`文件夹中的`index.md`是项目主页
+
+其余的文档可以放在`docs`下或子文件夹下
+
+可以通过以下命令直接在`GitHub`仓库创建一个docs分支来构建`GitHub Pages`静态文档网页
+
+`mkdocs gh-deploy`
+
 
 ## 网页防盗链
 
