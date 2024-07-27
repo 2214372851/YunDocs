@@ -59,6 +59,10 @@ export default defineConfig({
             ],
             '/study': [
                 {
+                    text: 'Tools',
+                    link: '/study/Tools'
+                },
+                {
                     text: 'Python',
                     collapsed: true,
                     items: [

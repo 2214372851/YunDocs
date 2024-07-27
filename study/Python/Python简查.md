@@ -153,7 +153,8 @@ plugins:
 }
 ```
 
-
+## 简易FTP文件服务
+`python -m http.server 80`
 
 ## 代理
 
