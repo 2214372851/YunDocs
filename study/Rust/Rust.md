@@ -3083,7 +3083,7 @@ impl<T: Display + PartialOrd> Pair<T> {
 为满足 `Trait Bound` 的所有类型上实现 `Trait` 叫做覆盖实现（blanket implementations）
 
 ```rust
-// 标准库中为实现了 Display 的 Trait 添加了一个 to_string fan
+// 标准库中为实现了 Display 的 Trait 添加了一个 to_string 方法
 #[stable(featurn = "rust1", since = "1.0.0")]
 impl<T: fmt::Display> ToString for T {
     #[inline]
