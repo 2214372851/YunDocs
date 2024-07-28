@@ -1,5 +1,9 @@
 # Rust基础
 
+
+
+> 如果使用的是 RustRover 作为开发 IDE 的话，需要到运行中关闭运行前编译，否则开发过程中运行会变的很慢
+
 ## 一、Cargo
 
 ```bash
@@ -2727,9 +2731,365 @@ impl<T> Shape<T> {
 - 使用泛型的代码和使用具体类型的代码运行速度是一样的
 - 单态化（monomorphization）
   - 在编译时将泛型替换为具体类型的过程
-  - 
+
+```rust
+fn main() {
+    let insteger =Some(5);
+    let float = Some(5.0);
+}
+
+enum Option_i32 {
+    Some(i32),
+    None,
+}
+
+enum Option_f64 {
+    Some(f64),
+    None,
+}
+
+// fn main(){
+//     let integer = Option_i32::Some(5);
+//     let integer = Option_f64::Some(5.0);
+// }
+```
 
 
 
+## 十七、Trait
 
+`Trait` 告诉 Rust 编译器：
+
+- 某种类型具有哪些并且可以与其它类型共享的功能
+
+`Trait` 凑想的定义共享行为
+
+`Trait bounds` （约束） 泛型类型参数指定为实现了特定行为的类型
+
+`Trait` 与其它语言的接口 `interface` 类似，但存在区别
+
+
+
+### 定义 `Trait`
+
+`Trait` 的定义： 把方法签名放在一起，来定义实现某种目的所必须的一组行为
+
+- 关键字 `trait`
+- 只有方法签名，没有具体实现
+- `trait` 可以有多个方法，每个方法签名占一行，以 `;` 结尾
+- 实现该 `trait` 的类型不许提供具体的方法实现
+
+```rust
+trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+
+
+### 在类型上实现 `trait`
+
+- 与为类型实现方法类似
+
+- 不同之处
+
+  - `impl xxx for Tweet {}`
+  - 在 `impl` 的块里,需要对 `trait`里的方法签名进行具体实现
+
+  
+
+  `lib.rs`
+
+  ```rust
+  
+  pub trait Summary {
+      fn summarize(&self) -> String;
+  }
+  
+  pub struct NewsArticle {
+      pub headline: String,
+      pub location: String,
+      pub author: String,
+      pub content: String,
+  }
+  
+  impl Summary for NewsArticle {
+      fn summarize(&self) -> String {
+          format!("{}, by {} ({})", self.headline, self.author, self.location)
+      }
+  }
+  
+  pub struct Tweet {
+      pub username: String,
+      pub content: String,
+      pub reply: bool,
+      pub retweet: bool,
+  }
+  
+  impl Summary for Tweet {
+      fn summarize(&self) -> String {
+          format!("{}: {}", self.username, self.content)
+      }
+  }
+  ```
+
+  
+
+  
+
+  `mian.rs`
+
+  ```rust
+  use demo::{Summary, Tweet};
+  
+  fn main() {
+      let tweet = Tweet {
+          username: String::from("horse_ebooks"),
+          content: String::from("of course, as you probably already know, people"),
+          reply: false,
+          retweet: false,
+      };
+      println!("1 new tweet: {}", tweet.summarize());
+  
+  }
+  ```
+
+  > 只有当 `trait` 在当前作用域才能使用实现的方法，如上 `main.rs` 中不引入 `Summary` 就不可以调用 `summarize` 方法
+
+
+
+### 实现 `trait` 的约束
+
+可以在某个类型上实现某个 `trait` 的前提条件是：
+
+- 这个类型 或 这个 `trait` 是在本地 `crate` 里定义的
+
+无法为外部类型来实现外部的 `trait`
+
+- 这个限制是程序属性的一部分（一致性）
+- 孤儿机制：父类型不存在
+- 此规则可以确保其他人不能破坏您的代码，反之亦然
+- 如果没有这个规则，两个 `crate` 可以为同一类型实现同一个 `trait`，Rust 就不知道应该使用哪个实现了
+
+
+
+### 默认实现
+
+通过设置默认实现来为类型添加默认实现
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String {
+     String::from("Read more...")
+    }
+}
+
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {}
+```
+
+
+
+默认方法可以调用 `trait` 中的其它方法，即使这些方法没有默认实现,，那么使用该方法就得实现对应的依赖方法
+
+```rust
+pub trait Summary {
+    fn summary_author(&self) -> String;
+    fn summarize(&self) -> String {
+     format!("Read more... author is {}", self.summary_author())
+    }
+}
+```
+
+
+
+> 无法从方法实现的重写实现里面调用默认实现，重写了该实现就会导致默认实现无效且不可调用
+
+
+
+### `Trait` 作为参数
+
+
+
+#### `impl Trait` 语法：适用于简单情况
+
+```rust
+
+pub trait Summary {
+    fn summary_author(&self) -> String;
+    fn summarize(&self) -> String {
+     format!("Read more... author is {}", self.summary_author())
+    }
+}
+
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {
+    fn summary_author(&self) -> String {
+        self.author.to_string()
+    }
+}
+
+pub fn notify(item: impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+> `notify` 的 item 参数只能是实现了 `Summary` 的结构
+
+
+
+#### `Trait bound` 语法：可用于复杂情况
+
+
+
+`impl Trait` 语法是 `Trait bound` 的语法糖
+
+```rust
+pub fn notify1(item: impl Summary, item2: impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+pub fn notify<T: Summary>(item: T, item2: T) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+
+
+#### 使用 `+` 指定多个 `Trait bound`
+
+```rust
+pub fn notify1(item: impl Summary + Display) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+pub fn notify<T: Summary + Display>(item: T) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+
+
+#### `Trait bound` 使用 `where` 子句
+
+在签名后指定 `where` 字句
+
+```rust
+pub fn notify1<T, U>(item: T, item2: U) -> String
+where
+    T: Summary,
+    U: Summary, 
+{
+    format!("Breaking news! {}", item.summarize())
+}
+```
+
+
+
+###  `Trait` 作为返回类型
+
+
+
+```rust
+pub fn notify(s: &str) -> impl Summary {}
+```
+
+> `impl Trait` 只能返回确定的同一种类型，返回肯不同类型的代码会报错
+
+```rust
+// fn largest<T: PartialOrd + Copy>(list: &[T]) -> T {
+//     let mut largest = list[0];
+//
+//     for &item in list.iter() {
+//         // 实现了 std::cmp::PartialOrd Trait 才能比较
+//         if item > largest {
+//             largest = item;
+//         }
+//     }
+//
+//     largest
+// }
+fn largest<T: PartialOrd + Clone>(list: &[T]) -> &T {
+    let mut largest = &list[0];
+
+    for item in list.iter() {
+        // 实现了 std::cmp::PartialOrd Trait 才能比较
+        if item > &largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let str_list = vec![String::from("hello"), String::from("world")];
+    let num_list = vec![1, 2, 3, 4, 5, 7, 8];
+    // String 在堆内存上没有实现 Copy Trait, 但是实现了 Clone Trait
+    println!("largest string is {}", largest(&str_list));
+    // i32 在栈内存上实现了 Copy Trait
+    println!("largest number is {}", largest(&num_list));
+}
+```
+
+
+
+### 使用 `Trait Bound` 有条件的实现方法
+
+
+
+在使用泛型参数的 `impl` 块上使用 `Trait Bound`，我们可以有条件的为实现了特定 `Trait` 的类型来实现方法
+
+```rust
+use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> {
+    fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+// 当 T 实现了 Display 与 PartialOrd 两个 Trait 他就具有cmp_display 方法
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+```
+
+也可以为为实现了其它 `Trait` 的容易类型有条件的实现某个 `Trait`
+
+为满足 `Trait Bound` 的所有类型上实现 `Trait` 叫做覆盖实现（blanket implementations）
+
+```rust
+// 标准库中为实现了 Display 的 Trait 添加了一个 to_string fan
+#[stable(featurn = "rust1", since = "1.0.0")]
+impl<T: fmt::Display> ToString for T {
+    #[inline]
+    defalut fn to_string(&self) -> String {
+        todo!()
+    }
+}
+```
 
