@@ -1,3 +1,30 @@
+## Windows 11 云母(MICA)效果
+
+`pip install win32mica`
+
+```python
+import win32mica
+
+mode_dark = win32mcia.MicaTheme.DARK    # 暗色主题 
+mode_light = win32mcia.MicaTheme.LIGHT  # 亮色主题
+mode_auto = win32mcia.MicaTheme.AUTO    # 系统主题
+
+style_default = win32mica.MicaStyle.DEFAULT
+style_alt = win32mica.MicaStyle.ALT
+
+## 当mode为auto时回调才有用
+def callbackFunction(NewTheme):
+    if NewTheme == MicaTheme.DARK:
+        print("Theme has changed to dark!")
+    else:
+        print("Theme has changed to light!")
+
+# hwnd 可以通过pyside实例的winId方法获取
+win32mica.ApplyMica(HWND=hwnd, Theme=mode, Style=style, OnThemeChange=callbackFunction)
+```
+
+
+
 ## 全局异常处理
 
 ```python
