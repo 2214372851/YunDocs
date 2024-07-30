@@ -1,4 +1,96 @@
+# Git
 
+Git 是一种去中心化的版本管理软件
+
+## 简记
+
+### 配置
+
+设置全局配置
+
+```bash
+git config --global user.name "[name]"
+git config --global user.email "[email]" 
+```
+
+### 开始使用
+
+创建 git 存储库
+
+`git init`
+
+克隆现有的 git 存储库
+
+`git clone [url]`
+
+### 提交
+
+提交所有跟踪的更改
+
+`git commit -am "[msg]"`
+
+向上次提交添加新的修改
+
+`git commit --amend --no-edit`
+
+更改最后提交的消息
+
+`git commit --amend`
+
+撤销最近的提交并保留更改
+
+`git reset HEAD~1`
+
+撤销N个最近的提交并保留更改
+
+`git reset HEAD~N`
+
+撤销最近的提交并摆脱更改
+
+`git reset HEAD~1 --hard`
+
+将峰值重置为远程状态
+
+```bash
+git fetch origin
+git reset --hard origin/[branch-name]
+```
+
+### 其它
+
+见本地master分支重命名为main
+
+`git branch -m master main`
+
+## Git Message 标识
+
+消息格式：`git commit -m "[标识]：message"`
+
+feat: 新功能增加
+
+fix: 修复问题/BUG
+
+style: 代码风格相关无影响运行结果的
+
+perf: 优化/性能提升
+
+refactor: 重构
+
+revert: 撤销修改
+
+test: 测试相关
+
+docs: 文档/注释
+
+chore: 依赖更新/脚手架配置修改等
+
+workflow: 工作流改进
+
+ci: 持续集成
+
+types: 类型定义文件更改
+
+wip: 开发中
 
 ## GitHub Actions
 

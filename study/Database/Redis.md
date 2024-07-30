@@ -1,3 +1,119 @@
+## CentOS 7 安装Redis
+
+### 安装依赖
+
+redis 是基于C语言开发, 所以要在服务器运行 Redis 需要 验证是否暗转了gcc
+
+查看是否安装了gcc
+
+`gcc -v`
+
+安装
+
+`yum install -y gcc`
+
+### 下载并安装
+
+进入安装目录
+
+`cd /usr/local`
+
+下载redis
+
+`wget https://download.redis.io/releases/redis-6.2.6.tar.gz`
+
+解压redis
+
+`tar -zxvf redis-6.2.6.tar.gz`
+
+删除压缩包
+
+`rm -f redis-6.2.6.gz`
+
+### 编译
+
+进入解压出来的目录
+
+`cd redis-6.2.6`
+
+编译将Redis安装到 `/usr/local/redis`
+
+`make install PREFIX=/usr/local/redis`
+
+### 启动 Redis
+
+#### 直接启动
+
+安装目录下的 bin 文件夹中
+
+`./redis-server`
+
+#### 守护进程启动
+
+从redis源码目录中复制 `redis.conf` 到 redis 的安装目录
+
+`cp /usr/local/redis-6.2.6/redis.conf /usr/loacl/redis/bin`
+
+修改配置文件, 将 `daemonize` 的值改为 `yes`
+
+启动服务
+
+`./redis-server redis.conf`
+
+检查是否启动成功
+
+`ps -ef | grep redis`
+
+### 开机自启
+
+进入 `/lib/systemd/system`
+
+创建文件 `vim redis.service`
+
+文件内容如下
+
+```conf
+[Unit]
+Description=redis-server
+After=network.target
+
+[Service]
+Type=forking
+# ExecStart需要按照实际情况修改成自己的地址
+ExecStart=/usr/local/redis/bin/redis-server /usr/local/redis/bin/redis.conf
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+设置开机自启
+
+`systemctl enable redis.service`
+
+启动 redis 服务
+
+`systemctl start redis.service`
+
+其它命令
+
+```bash
+# 查看服务状态
+systemctl status redis.service
+# 停止服务
+systemctl stop redis.service
+# 取消开机启动(卸载服务)
+systemctl disabled redis.service
+```
+
+### 设置密码
+
+修改配置文件中 `requirepass` 后面的值就是密码
+
+重启服务
+
+`systemctl restart redis.service`
+
 ## redis数据类型
 
 > redis可以理解为一个全局字典，key是数据的唯一标识
