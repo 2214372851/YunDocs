@@ -3093,3 +3093,70 @@ impl<T: fmt::Display> ToString for T {
 }
 ```
 
+
+
+## 十八、生命周期
+
+`Rust` 中每个引用都有自己的生命周期
+
+> 生命周期：让引用保持有效的作用域
+>
+> 大多数情况下：生命周期是隐式的、可被推断的
+>
+> 当引用的生命周期肯以不同的方式相互关联时：手动标注生命周期
+
+
+
+### 避免悬垂引用（dangling reference）
+
+- 生命周期的主要目标：避免悬垂引用
+
+```rust
+fn main() {
+    {
+        let r;
+        {
+            let x = 5;
+            r = &x;
+        }
+        // x被释放
+        println!("r: {}", r);
+    }
+}
+```
+
+
+
+### 借用检查器
+
+- `Rust` 编译器的借用检查器：比较作用域来判断所有借用是否合法
+- 比较生命周期长度，长的引用短的就会编译错误
+
+
+
+### 函数中的泛型生命周期
+
+```rust
+fn main() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+}
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+
+
+### 生命周期标注语法
+
+- 生命周期的标注不会改变引用的生命周期长度
+- 当指定了泛型生命周期参数，函数就可以结束带有如何生命周期的引用
+- 生命周期的标注：描述了多个引用的生命周期间的关系，单不影响生命周期

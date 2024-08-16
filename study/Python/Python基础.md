@@ -744,15 +744,15 @@ graph LR
 >           print(f'{fun.name}运行结束')
 >           return v
 >       return task
->                                                                                               
+>                                                                                                   
 >      @taskRun
 >       def taskA():
 >           time.sleep(5)
->                                                                                             
+>                                                                                                 
 >       @taskRun
 >       def taskB():
 >           time.sleep(8)
->                                                                                             
+>                                                                                                 
 >       taskA()
 >       taskB()
 >     
@@ -1029,7 +1029,8 @@ mycelery
 
 ```python
 # config.py
-result_backend = 'redis://:20020308@192.168.10.84:6379/0'  # Broker配置，使用Redis作为消息中间件
+result_backend = 'redis://:20020308@192.168.10.84:6379/0'  
+# Broker配置，使用Redis作为消息中间件
 broker_url = 'redis://:20020308@192.168.10.84:6379/1'
 ```
 
@@ -1044,7 +1045,7 @@ from celery import Celery
 app = Celery('django_celery')
 
 # 把celery与django结合，识别加载django的配置文件
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'celeryPros,settings.dev')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangoProject.settings')
 
 # 跳过app对象加载配置文件
 app.config_from_object('mycelery.config')
@@ -1055,8 +1056,9 @@ app.autodiscover_tasks(['mycelery.sms',])
 
 # 启动Celery命令
 # 建议切换到mycelery根目录下启动
-# celery -A mycelery.main worker --loglevel=info -P eventlet
 
+# 定时 celery -A mycelery.main beat -l info
+# 消费 celery -A mycelery.main worker --loglevel=info -P eventlet
 ```
 
 

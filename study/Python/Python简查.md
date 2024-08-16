@@ -1,6 +1,6 @@
 ## 多因子身份验证
 
-(PyOTP)[https://pyauth.github.io/pyotp/] 是一个用与生成和验证一次性密码的python库.它可以用于Web应用程序和其它需要用户登录的系统中实现双因素（2FA）或多因素（MFA）身份验证方法。
+[PyOTP](https://pyauth.github.io/pyotp/) 是一个用与生成和验证一次性密码的python库.它可以用于Web应用程序和其它需要用户登录的系统中实现双因素（2FA）或多因素（MFA）身份验证方法。
 
 ## 脚手架模板
 
