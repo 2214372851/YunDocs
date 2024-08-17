@@ -744,15 +744,15 @@ graph LR
 >           print(f'{fun.name}运行结束')
 >           return v
 >       return task
->                                                                                                   
+>                                                                                                       
 >      @taskRun
 >       def taskA():
 >           time.sleep(5)
->                                                                                                 
+>                                                                                                     
 >       @taskRun
 >       def taskB():
 >           time.sleep(8)
->                                                                                                 
+>                                                                                                     
 >       taskA()
 >       taskB()
 >     

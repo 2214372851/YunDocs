@@ -3160,3 +3160,228 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
 - 生命周期的标注不会改变引用的生命周期长度
 - 当指定了泛型生命周期参数，函数就可以结束带有如何生命周期的引用
 - 生命周期的标注：描述了多个引用的生命周期间的关系，单不影响生命周期
+
+
+#### 标注语法
+
+- 生命周期参数名
+    - 以 `'` 开头
+    - 通常全小写且非常短
+    - 通常使用 `'a`
+- 生命周期标注的位置
+    - 在引用的 `&` 符号后
+    - 使用空格将标注和引用类型分开
+
+
+一个普通的引用 `&i32`
+
+
+带有显式生命周期的引用 `&'a i32`
+
+
+带有显式生命周期的可变引用 `&'a mut i32`
+
+
+> 单个生命周期的标注本身没用意义
+
+
+#### 函数签名中的生命周期标注
+
+- 泛型生命周期参数声明在函数名和参数列表之间的 `<>` 中
+    - `fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {return x}` 表示参数和返回值的生命周期都不能短于 `'a`
+- `'a` 生命周期为参数 `x` 和 `y` 中比较短的那个的生命周期的长度
+
+
+> 反例: 由于string2的生命周期比较短所以为 `'a`, 但是当跳出该作用域时 `result` 还存在对string2的引用,所以生命周期编译异常
+
+
+```rust
+fn main() {
+    let string1 = String::from("abcd");
+    let result;
+    {
+        let string2 = String::from("xyz");
+        result = longest(string1.as_str(), string2.as_str());
+    }
+    println!("The longest string is {}", result);
+}
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+
+#### 深入了解生命周期
+
+- 指定生命周期参数的方式依赖于函数所做的事
+    - `fn longest<'a>(x: &'a str, y: & str) -> &'a str {x}`
+- 函数只返回了x那么y的生命周期对于函数就没有意义,所以不需要为它指明生命周期
+- 从函数返回一个引用时, 返回类型的生命周期参数需要与其中一个参数的生命周期匹配
+- 如果返回的引用没有指向任何参数,那么它只能引用函数内创建的值
+    - 也就是悬垂引用: 该值在函数结束时就走出来作用域
+
+
+> 这个时候当函数返回回去之后result的生命周期已经结束所以无法编译通过
+
+
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    let result = String::from("abc");
+    result.as_str()
+}
+// 这个时候需要返回内部变量可以选择返回 String 把函数内部值的所有权移交给函数调用者
+fn longest2<'a>(x: &'a str, y: &'a str) -> String {
+    String::from("abc")
+}
+```
+
+
+#### `Struct` 定义中的声明周期标注
+
+- Struct 里可包括
+    - 自持有类型(str)
+    - 引用: 需要在每个引用上添加生命周期标注
+
+
+```rust
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+// first_sentence 的生命周期比 i 长所以编译成功
+fn main() {
+    let novel = String::from("Call me Ishmael. Some years ago...");
+
+    let first_sentence = novel.split('.')
+        .next()
+        .expect("Could not find a '.'");
+    let i = ImportantExcerpt { part: first_sentence };
+}
+```
+
+
+#### 生命周期的省略
+
+- 每个引用都有生命周期
+- 需要为使用生命周期的函数或 struct 指定生命周期参数
+
+
+##### 省略规则
+
+- 在Rust引用分析中所编入的模式称为生命周期省略规则
+    - 这些跪着无需开发者来遵守
+    - 它们是一些特殊情况, 有编译器来考虑
+    - 如果你的代码符合这些情况, 那么就无需显式标注生命周期
+- 生命周期省略跪着不会提供完整的判断
+    - 如果应用规则后, 引用的生命周期仍然模糊不清还是会编译错误
+    - 解决办法: 手动添加生命周期标注, 表明引用间的相互关系
+
+
+##### 输入、输出生命周期
+
+- 函数/方法的参数: 输入生命周期
+- 函数/方法的返回值: 输出生命周期
+
+##### 生命周期省略的三个规则
+
+- 编译器使用3个规则在没有显示标注生命周期的情况下,来确定引用的生命周期
+    - 规则一应用于输入生命周期
+    - 规则二、三应用于输出生命周期
+    - 编译器应用完3个规则之后,仍然无法确定生命周期的引用则编译报错
+    - 这些规则适用于 `fn` 定义和 `impl` 块
+- 规则一: 每个引用类型的参数都有自己的生命周期
+- 规则二: 如果只有一个输入生命周期参数, 那么该生命周期被赋予给所有的输出生命周期参数
+- 规则三: 如果有多个输入生命周期参数,但其中一个是 `&self` 或是 `&mut self` (是方法), 那么 self 的生命周期会被赋给所有的输出生命周期参数
+
+
+```rust
+// 原始函数
+fn first_word(s: &str) -> &str {}
+
+// 规则一
+fn first_wold<'a>(s: &'a str) -> &str {}
+
+// 规则二
+fn first_wold<'a>(s: &'a str) -> &'a str {}
+```
+
+
+```rust
+// 原始函数
+fn long(x: &str, y: &str) -> &str = {}
+
+// 规则一
+fn long<'a, 'b>(x: &'a str, y: &'b str) -> &str = {}
+
+// 是函数不是方法无法适配规则二、三所以需要手动标注
+fn long(x: &str, y: &str) -> &str = {}
+```
+
+
+#### 方法定义中的生命周期标注
+
+- 在 `struct` 上使用生命周期实现方法, 语法和泛型参数的语法一样
+- 在哪声明和使用的生命周期参数,依赖于:
+    - 生命周期参数是否和字段、方法的参数或返回值有关
+- `struct` 字段的生命周期名
+    - 声明在 `impl` 关键字后
+    - 在 `struct` 名后使用
+    - 这些生命周期是 `struct` 类型的一部分
+- `impl` 块内的方法签名中
+    - 引用必须绑定于 `struct` 字段引用的生命周期, 或者引用是独立的也可以
+    - 生命周期省略规则经常使得方法中的生命周期标注不是必须的
+
+
+```rust
+struct Image<'a> {
+    url: &'a str,
+}
+
+impl<'a> Image<'a> {
+    fn get_bit(&self) -> i32 { 3 }
+
+    // 规则三 alt生命周期赋给了self 省略返回 &'a str
+    fn get_url(&self, alt: &str) -> &str { self.url }
+}
+
+fn main() {
+    let image = Image { url: "https://example.com/image.jpg" };
+    let a = String::from("hello word");
+    let b = a.split('.').next().expect("no dot");
+    println!("{}", b)
+}
+```
+
+### 静态生命周期
+
+- `'static` 是一个特殊的生命周期: 持续整个程序运行的时间
+    - 例如: 所有的字符串字面值都拥有 `'static` 生命周期
+        - `let s: &'static str = "hello world"`
+- 为引用指定 `'static` 生命周期前
+    - 是否需要引用在整个生命周期内都存活
+
+
+### 综合示例
+
+```rust
+use std::fmt::Display;
+
+fn longest_with_an_announcement<'a, T>(x: &'a str, y: &'a str, ann: T) -> &'a str
+where T: Display, // T 可以被替换为任何实现了 Display  trait 的类型
+{
+    println!("Announcement! {}", ann);
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+fn main() {
+
+}
+```
