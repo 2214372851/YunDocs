@@ -3385,3 +3385,241 @@ fn main() {
 
 }
 ```
+
+
+
+## 二十、编写自动化测试
+
+
+
+### 编写和运行测试
+
+
+
+#### 测试（函数）
+
+- 测试
+  - 函数
+  - 验证非测试代码的给你是否和预期一致
+- 测试函数体（通常）执行的三个操作：
+  - 准备数据/状态
+  - 运行被测试代码
+  - 断言 `Assert` 结果
+
+#### 解剖测试函数
+
+- 测试函数需要使用 `test` 属性 `attribute`进行标注
+  - `Attribute` 就是一段 Rust 代码的元数据
+  - 在函数上加 `#[test]` 可以把函数变为测试函数
+
+
+
+#### 运行测试
+
+- 使用 `cargo test` 命令运行所有测试函数
+  - Rust 会构建一个 `Test Runner` 可执行文件
+    - 它会运行标注了 `test` 的函数, 并报告其运行是否成功
+- 当使用 `cargo` 创建 `library` 项目的时候, 会生成一个 `test module` 里面有一个`test` 函数
+  - `cargo new adder --lib` 创建一个 `library` 项目
+  - 可以添加任意数量的 `test module` 或函数
+
+```rust
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
+}
+```
+
+
+
+#### 测试失败
+
+- 测试函数 `panic` 就表示失败
+- 每个测试运行在一个新线程
+- 当主线程看见某个测试线程挂掉了, 就标记为失败
+
+```rust
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn it_works2() {
+        panic!("Make this test::fail")
+    }
+}
+```
+
+```
+running 2 tests
+test tests::it_works ... ok
+test tests::it_works2 ... FAILED
+
+failures:
+
+---- tests::it_works2 stdout ----
+thread 'tests::it_works2' panicked at src\lib.rs:17:9:
+Make this test::fail
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::it_works2
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+```
+
+> 由于出现了 `panic` 导致测试失败了
+
+
+
+### 断言
+
+#### 使用 `assert!` 宏来检查测试结果
+
+- `assert!` 宏, 来自标准库, 用来确定某个状态是否为 `true`
+  - `true` 测试通过
+  - `false` 调用 `panic!`, 测试失败
+
+```rust
+#[derive(Debug)]
+pub struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    pub fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn larger_can_hold_smaller() {
+        let larger = Rectangle {
+            width: 8,
+            height: 7,
+        };
+        let smaller = Rectangle {
+            width: 5,
+            height: 1,
+        };
+
+        assert!(larger.can_hold(&smaller));
+    }
+
+    #[test]
+    fn smaller_cannot_hold_larger() {
+        let larger = Rectangle {
+            width: 8,
+            height: 7,
+        };
+        let smaller = Rectangle {
+            width: 5,
+            height: 1,
+        };
+
+        assert!(!smaller.can_hold(&larger));
+    }
+}
+```
+
+
+
+#### 使用 `assert_eq!` 和 `assert_ne!` 测试相等性
+
+- 都来自标准库
+- 判断两个参数是否 相等 或 不等
+- 就是使用了 `==` 和 `!=` 运算符的`assert!`
+- 断言失败会自动打印出两个参数的值
+  - 使用了 `debug` 格式打印参数
+    - 要求参数实现了 `PartialEq` 和 `Debug Traits` (所有的基本类型和标准库里的大部分类型都实现了)
+
+
+
+```rust
+pub fn add_two(a: i32) -> i32 {
+    a + 2
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn if_adds_two(){
+        assert_eq!(4, add_two(2))
+    }
+
+    #[test]
+    fn not_adds_two() {
+        assert_ne!(5, add_two(2))
+    }
+}
+```
+
+
+
+```
+自动打印错误值
+---- tests::not_adds_two stdout ----
+thread 'tests::not_adds_two' panicked at src\lib.rs:16:9:
+assertion `left != right` failed
+  left: 4
+ right: 4
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+
+
+### 自定义错误消息
+
+#### 添加自定义错误消息
+
+- 可以向 `assert!` 、`assert_eq!` 、 `assert_ne!` 添加可选的自定义消息
+  - 这些自定义消息和失败消息都会打印出来
+  - `assert!` 第一个参数必填, 自定义消息作为第二个参数
+  - `assert_eq!` 和 `assert_ne!` 前两个参数必填,自定义消息作为第三个参数
+  - 自定义消息参数会被传递给 `format!` 宏, 可以使用 `{}` 占位符
+
+```rust
+pub fn greeting(name: &str) -> String {
+    format!("Hello {}!", name)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn it_works() {
+        let result = greeting("world");
+        assert!(result.contains("kiss"), "错误值为：{}", result)
+    }
+}
+```
+
