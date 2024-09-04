@@ -3623,3 +3623,298 @@ mod tests {
 }
 ```
 
+
+
+### 使用 `should_panic` 检查恐慌
+
+
+
+#### 验证错误处理的情况
+
+- 测试除了验证代码的返回值是否正确, 还需要验证代码是否如期的处理了发生错误的情况
+- 可检验代码在特定的情况下是否发生了 `panic`
+- `should_panic` 属性(`attribute`)
+  - 函数 `panic` : 测试通过
+  - 函数没有 `panic` : 测试失败
+
+```rust
+pub struct Guess {
+    value: u32,
+}
+
+impl Guess {
+    pub fn new(value: u32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!("Guess value must be between 1 and 100, got {}.", value);
+        }
+
+        Guess { value }
+    }
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn it_works() {
+        Guess::new(101);
+    }
+}
+```
+
+
+
+#### 让 `should_panic` 更精确
+
+- 为 `should_panic` 属性添加一个可选的 `expected` 参数
+  - 将检查 `panic` 消息中是否包含所指定的文字
+
+
+
+```rust
+pub struct Guess {
+    value: u32,
+}
+
+impl Guess {
+    pub fn new(value: u32) -> Guess {
+        if value < 1 {
+            panic!("Guess value must be greater than or equal to 1, got {}.", value);
+        } else if value > 100 {
+            panic!("Guess value must be less than or equal to 100, got {}.", value)
+        }
+
+        Guess { value }
+    }
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "Guess value must be less than or equal to 100")]
+    fn it_works() {
+        Guess::new(101);
+    }
+}
+```
+
+
+
+### 测试中使用 `Reault<T, E>`
+
+- 无需 `panic` 通过返回 `Reault<T, E>` 作为返回类型编写测试
+  - 返回 `OK` : 测试通过
+  - 返回 `Err` : 测试失败
+
+```rust
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn it_works() -> Result<(), String> {
+        if 2 + 2 == 4 {
+            Ok(())
+        } else {
+            Err(String::from("two plus two does not equal four"))
+        }
+    }
+}
+```
+
+> 此时不依靠 `panic` 来做检查, 所以不要在 `Result<T, E>` 编写的测试上标注 `#[should_panic]`
+
+
+
+### 控制测试运行方式
+
+- 改变 `cargo test` 的行为: 添加命令行参数
+- 默认行为
+  - 并行运行
+  - 所有测试
+  - 捕获 (不显示) 所有输出, 使读取与测试结果相关的输出更容易
+    - 测试通过的 `println!` 就不会显示
+- 命令行参数
+  - 针对 `cargo test` 的参数: 紧跟 `cargo test` 后
+  - 针对测试可执行程序: 放在 `--` 之后
+- `cargo test --help` 显示出后面可以跟的参数
+- `cargo test -- --help` 显示出 `--` 后面可以跟的参数
+
+#### 并行运行测试
+
+- 运行多个测试: 默认使用过多个线程并行运行
+  - 运行快
+- 确保测试之间
+  - 不会互相依赖
+  - 不依赖于某个共享状态 (环境、工作目录、环境变量等等)
+- `--test-threads` 参数
+  - 传递给二进制文件
+  - 不想以并行方式运行测试, 或相对现场数进行精选颗粒度控制
+  - 可以使用该参数后面跟上线程的数量
+  - 例子: `cargo test -- --test-threads=1`
+
+
+
+### 显式函数输出
+
+- 默认, 如果测试通过, `Rust` 的 `test` 库会捕获所有打印到标注输出的内容
+- 例如, 如果在被测试的代码中用到了 `println!`
+  - 测试通过: 不会在终端看到打印的内容
+  - 测试不通过: 会看到打印的内容和失败信息
+- `cargo test -- --show-output`
+  - 显示成功的输出
+
+```rust
+pub fn add_integers(a: i32, b: i32) -> i32 {
+    println!("Adding {} and {}", a, b);
+    a + b
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_integers() {
+        assert_eq!(add_integers(1, 2), 3);
+    }
+
+    #[test]
+    fn test_add_integers_negative() {
+        assert_ne!(add_integers(1, 2), 3);
+    }
+}
+```
+
+
+
+### 按照测试名称运行测试
+
+> 按名称运行测试的子集
+
+- 选择运行的测试: 将测试的名称 (一个或多个) 作为 `cargo test` 的参数
+- 运行单个测试: 参数只能传一个 `cargo test test_add_integers`
+- 运行多个测试: 指定测试名的一部分 (模块名 `mod tests` 也可以)
+
+
+
+### 忽略测试
+
+> 忽略某些测试, 运行剩余测试
+
+- `ignore` 属性 (`attribule`)
+
+```rust
+pub fn add_integers(a: i32, b: i32) -> i32 {
+    println!("Adding {} and {}", a, b);
+    a + b
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_integers() {
+        assert_eq!(add_integers(1, 2), 3);
+    }
+
+    #[test]
+    fn test_add_integers_negative() {
+        assert_eq!(add_integers(-1, -2), -3);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_add_integers_zero() {
+        assert_eq!(add_integers(0, 0), 0);
+    }
+}
+```
+
+
+
+> 通过 `cargo test -- --ignored` 来单独运行被忽略的测试
+
+
+
+### 测试的组织
+
+#### 测试的分类
+
+- 对测试的分类
+  - 单元测试
+  - 集成测试
+- 单元测试
+  - 小, 专注
+  - 一次对以恶搞模块进行**隔离**的测试
+  - 可测试 `private` 接口 (没有被 `pub` 的接口)
+- 集成测试
+  - 在库外部, 和其他的外部代码一样使用你的代码
+  - 只能使用 `public` 接口
+  - 可能在每个测试中使用到多个模块
+
+
+
+### 单元测试
+
+> `#[cfg(test)]` 标注
+>
+> 约定在每个库文件中编写一个 `tests` 模块来做测试用例
+
+- `tests` 模块上的 `#[cfg(test)]` 标注
+  - 只用运行 `cargo test` 才编译和运行带代码
+- 集成测试在不同的目录, 它不需要 `#[cfg(test)]` 标注
+- `cfg` : `configuration` 配置
+  - 告诉 `Rust` 下面的条目只用在指定的配置选项下才被包含
+  - 配置选项 `test`: 由 `Rust` 提供, 用来百衲衣和运行测试
+    - 只用 `cargo test` 才会编译代码, 包括模块中的 `helper` 函数和 `#[test]` 标注的函数
+
+```rust
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4)
+    }
+
+    // 虽然没有 test 标记，但是它也会被编译
+    fn it_fails() {
+        assert_eq!(2 + 2, 5)
+    }
+}
+```
+
+
+
+#### 测试私有函数
+
+- `Rust` 允许测试私有函数
+
+```rust
+fn add_two(a: i32) -> i32 {
+    a + 2
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::add_two;
+
+    #[test]
+    fn it_works() {
+        assert_eq!(add_two(2), 4)
+    }
+}
+```
+
