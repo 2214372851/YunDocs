@@ -1,3 +1,5 @@
+# Python 基础
+
 ## 一、初始Python
 
 ### 编程语言分类
@@ -744,15 +746,15 @@ graph LR
 >           print(f'{fun.name}运行结束')
 >           return v
 >       return task
->                                                                                                       
+>                                                                                                           
 >      @taskRun
 >       def taskA():
 >           time.sleep(5)
->                                                                                                     
+>                                                                                                         
 >       @taskRun
 >       def taskB():
 >           time.sleep(8)
->                                                                                                     
+>                                                                                                         
 >       taskA()
 >       taskB()
 >     

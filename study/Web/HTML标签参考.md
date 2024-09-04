@@ -1,6 +1,6 @@
-## HTML标签参考
+# HTML标签参考
 
-## [](https://www.w3school.com.cn/tags/tag_doctype.asp)
+## [声明](https://www.w3school.com.cn/tags/tag_doctype.asp)
 
 ### 按字母排序
 

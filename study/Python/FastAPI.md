@@ -1,10 +1,10 @@
-## FastAPI
+# FastAPI
 
 > FastAPI是建立在Pydantic和Starlette基础上的，Pydantic是一个基于Python类型提示来定义数据验证、序列化和文档的库。Starlette是一种轻量级的ASGI框架，用于构建高性能Asyncio服务的理性选择。
 
 
 
-### HTTP协议
+## HTTP协议
 
 - 基于TCP/IP协议
 
@@ -22,7 +22,7 @@
 
 
 
-### 安装
+## 安装
 
 ```bash
 pip install fastapi
@@ -36,7 +36,7 @@ pip install uvicorn==0.20.0
 
 
 
-### 简易示例
+## 简易示例
 
 ```python
 from pathlib import Path
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
 
 
-### 路由
+## 路由
 
 ```python
 app.get()
@@ -130,9 +130,9 @@ def app01_get():
 
 
 
-### 请求
+## 请求
 
-#### 路径参数
+### 路径参数
 
 ```python
 @app01.get('/a/{userid}')
@@ -150,7 +150,7 @@ async def get_username(username):
     return {'username':username}
 ```
 
-#### 请求参数
+### 请求参数
 
 ```python
 # 不是路径参数的a, b会被解释为查询参数，从请求的params中自动获取
@@ -166,7 +166,7 @@ async def app01_get(
     return {'message': 'app1b', 'a': a, 'b': b}
 ```
 
-#### 请求体数据
+### 请求体数据
 
 `pip install pydantic`做类型强制校验，大概比DRF快6~10倍
 
@@ -213,7 +213,7 @@ async def test(data: TestRequestData):
 
 
 
-#### form表单数据
+### form表单数据
 
 `pip install python-multipart`
 
@@ -235,7 +235,7 @@ async def test(
 
 
 
-#### 文件上传
+### 文件上传
 
 
 
@@ -273,7 +273,7 @@ async def uploads(file: list[UploadFile]):
 
 
 
-#### Request对象
+### Request对象
 
 
 
@@ -294,7 +294,7 @@ async def data(request: Request):
 
 
 
-#### 静态文件请求
+### 静态文件请求
 
 > 不是由服务器产生的文件，开发阶段就存在的文件，如css、js、图片等
 
@@ -310,9 +310,9 @@ app.mount('/static', StaticFiles(directory="static"))
 
 
 
-### 响应模型参数
+## 响应模型参数
 
-#### response_model
+### response_model
 
 > 此处用于隐藏输入的密码
 
@@ -348,7 +348,7 @@ async def data(user: UserIn):
 
 
 
-#### response_model_exclude_
+### response_model_exclude_
 
 > 用于排除响应数据中的字段
 >
@@ -391,7 +391,7 @@ async def data(user: str):
 
 
 
-### ORM操作
+## ORM操作
 
 > Tortoise ORM是受Django ORM启发的易于使用的异步ORM
 
@@ -399,7 +399,7 @@ async def data(user: str):
 
 
 
-#### 创建模型类
+### 创建模型类
 
 ```python
 from tortoise.models import Model
@@ -427,7 +427,7 @@ class Course(Model):
     name = fields.CharField(max_length=30, description='课程')
 ```
 
-#### 迁移模型类
+### 迁移模型类
 
 `pip install aerich`
 
@@ -494,7 +494,7 @@ aerich history
 
 
 
-#### 增删改查查
+## 增删改查查
 
 ```python
 from fastapi import APIRouter, Query
@@ -548,7 +548,7 @@ async def update_user(user_id: int):
 
 
 
-### 中间件
+## 中间件
 
 > 与Django中间件一致，先进先出（写在上面的后执行）
 
@@ -603,7 +603,7 @@ if __name__ == '__main__':
 
 
 
-### CORS
+## CORS
 
 手动实现
 

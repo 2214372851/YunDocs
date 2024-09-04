@@ -1,29 +1,29 @@
-# 一	浏览器能识别的标签（HTML标签）（HTML:超文本传输语言）
+# HTML标签
 
-## 1	编码（head）
+### 1	编码（head）
 
 ```html
 
 <meta charset="UTF-8">
 ```
 
-## 2	title（head）
+### 2	title（head）
 
 ```html
 <title>Title</title>
 ```
 
-## 3	标题
+### 3	标题
 
 		h1~h6（块级标签）
 
-## 4	div和span
+### 4	div和span
 
 		div,一个占一行（块级标签）
 		span,有多大占多数（行内标签，内联标签）
 		注意：两个标签比较素+css样式 
 
-## 5	超链接
+### 5	超链接
 
 		默认当前标签打开
 		跳转到自己的网站可以用	/url
@@ -39,7 +39,7 @@
 <a herf='url' target='_blank'> 点击跳转 </a>
 ```
 
-## 6	图片
+### 6	图片
 
 ```html
 <img src='图片地址'/>（行内标签，内联标签）
@@ -49,9 +49,9 @@
 <img style='height:10%;width=10%;' src='图片地址'/>
 ```
 
-## 7	列表
+### 7	列表
 
-### 7.1	无序列表
+#### 7.1	无序列表
 
 ```html
 
@@ -62,7 +62,7 @@
 </ul>
 ```
 
-### 7.2	有序列表
+#### 7.2	有序列表
 
 ```html
 
@@ -73,7 +73,7 @@
 </ol>
 ```
 
-## 8	表格
+### 8	表格
 
 ```html
 <!-- border边框 -->
@@ -108,27 +108,27 @@
 </table>
 ```
 
-## 9	input系列
+### 9	input系列
 
-### 9.1	文本框
+#### 9.1	文本框
 
 ```
 <input type="text"/>
 ```
 
-### 9.2	密码框
+#### 9.2	密码框
 
 ```
 <input type="password"/>
 ```
 
-### 9.3	上传
+#### 9.3	上传
 
 ```
 <input type="file"/>
 ```
 
-### 9.4	单选框
+#### 9.4	单选框
 
 name一致只能选一个不同都可以选
 
@@ -136,21 +136,21 @@ name一致只能选一个不同都可以选
     <input type="radio" name="n1"/>
 ```
 
-### 9.5	复选框
+#### 9.5	复选框
 
 ```html
 <input type="checkbox"/>篮球
 <input type="checkbox"/>足球
 ```
 
-### 9.6	按钮
+#### 9.6	按钮
 
 ```html
 <input type="button" value="提交"/>        <!-- 普通按钮 -->
 <input type="submit" value="提交"/>        <!-- 提交表单 -->
 ```
 
-## 10	下拉框
+### 10	下拉框
 
 #### 10.1	单选
 
@@ -206,7 +206,7 @@ form标签里必须有一个submit标签：<input type="submit" value="submit按
 一定要写name属性        密码：<input type="password" name="password"/>
 ```
 
-# 二	CSS样式（美化标签）
+# 一 CSS样式（美化标签）
 
 ## 1	CSS应用方式
 
@@ -690,7 +690,7 @@ border-方向，设置单边颜色
 </ul>
 ```
 
-# 一	CSS动画
+# 二 CSS动画
 
 ## 浏览器私有前缀
 
@@ -799,7 +799,7 @@ CSS 皮肤
 ## 1	JavaScript 动态交互
 
 		交互语言
-
+	
 	JavaScript，是一门编程语言。浏览器就是JavaScript解释器
 
 ## 2	DOM和BOM

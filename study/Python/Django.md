@@ -359,7 +359,7 @@ def __str__(self):
 ```
 
 			![image-20220507150249197](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220507150249197.png)
-
+	
 			部门被删除员工处理
 			一起删除（级联删除）
 
@@ -1695,11 +1695,11 @@ Project.objects.filter(dataPerson__uid=uid).prefetch_related(
 >     - .values('dataBatch'):
         >
         >       这指定了子查询的分组条件，它根据 dataBatch 字段对查询结果进行分组。
->
+>    
 >     - .annotate(c=Count('uid')):
         >
         >       这会添加一个注解结果，通过计算每一个组的 uid 字段的数量。
->
+>    
 >     - .values('c'):
         >
         >       这返回最后的子查询结果，即每一个组的 uid 字段的数量。
