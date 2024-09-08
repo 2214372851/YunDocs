@@ -3918,3 +3918,72 @@ mod tests {
 }
 ```
 
+
+
+### 集成测试
+
+- 在 `Rust` 里, 集成测试弯曲位于被测试库的外部
+- 目的: 测试被测试库的多个部分是否能正确的一起工作
+- 集成测试的覆盖率很重要
+
+
+
+`tests` 目录
+
+- 创建集成测试: `tests` 目录 
+- `tests` 目录下的每个测试文件都是一个单独的 `crate`
+  - 需要将测试库导入
+- 无需标注 `#[cfg(test)]` , `tests` 目录被特殊对待
+
+```rust
+// tests/add_test.rs
+use demo;
+
+#[test]
+fn test_add() {
+    assert_eq!(demo::add(1, 2), demo::add(2, 1));
+}
+
+```
+
+
+
+#### 运行指定的集成测试
+
+- 运行一个指定的集成测试: `cargo test 函数名`
+- 运行某个测试文件内的所有测试: `cargo test --test 文件名`
+
+
+
+#### 集成测试中的子模块
+
+- `tests` 目录下每个文件被编译成单独的 `crate`
+  - 这些文件不共享行为 (与 `src` 下的文件规则不同)
+- `tests` 目录下的 `凑到\
+
+```rust
+// tests/common/mod.rs
+
+pub fn add_mod(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+
+
+针对 `binary crate` 的集成测试
+
+- 如果项目是 `binary crate` , 只包含 `src/main.rs` 没有 `src/lib.rs`
+  - 不能在 `tests` 目录下创建集成测试
+  - 无法把 `main.rs` 的函数导入作用域
+- 只用 `library crate` 以为这独立运行
+
+
+
+## 二十一、命令行程序
+
+### 二进制程序关注点分离的指导性原则
+
+- 将程序拆分为 `main.rs` 和 `lib.rs`， 将业务逻辑放入 `lib.rs`
+- 当命令行解析逻辑少时放在 `main.rs` 也行
+- 当命令行解析逻辑变复杂时，需要将它从 `main.rs` 提取到 `lib.rs`

@@ -166,7 +166,7 @@ print(type(a), type(b))
 
 ```python
 print(1)
-a= input('输入一个值')
+a = input('输入一个值')
 ```
 
 ### 运算符
@@ -180,7 +180,7 @@ a= input('输入一个值')
 True and False
 True or False
 not True
-True in Flase
+True in [True, False]
 ```
 
 
@@ -211,8 +211,8 @@ graph TB;
 ```
 
 ```python
-a = input("输入一个数字")
-if a == 1:
+a = input("输入一个数字") 
+if a == '1':
     # 语句1
     print('你输入了1')
 else:
@@ -275,7 +275,7 @@ while True:
         # 退出上级循环
         break
     elif a > 10:
-        # 退出上级本次循环
+        # 退出上级 本次 循环
         continue
     a += 2
 ```
@@ -746,15 +746,15 @@ graph LR
 >           print(f'{fun.name}运行结束')
 >           return v
 >       return task
->                                                                                                           
+>                                                                                                               
 >      @taskRun
 >       def taskA():
 >           time.sleep(5)
->                                                                                                         
+>                                                                                                             
 >       @taskRun
 >       def taskB():
 >           time.sleep(8)
->                                                                                                         
+>                                                                                                             
 >       taskA()
 >       taskB()
 >     
