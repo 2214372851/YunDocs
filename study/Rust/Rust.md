@@ -3987,3 +3987,216 @@ pub fn add_mod(a: i32, b: i32) -> i32 {
 - 将程序拆分为 `main.rs` 和 `lib.rs`， 将业务逻辑放入 `lib.rs`
 - 当命令行解析逻辑少时放在 `main.rs` 也行
 - 当命令行解析逻辑变复杂时，需要将它从 `main.rs` 提取到 `lib.rs`
+
+
+
+### 此处案例拆分后，留在 `main` 的功能：
+
+- 使用参数调用命令行解析逻辑
+- 进行其他配置
+- 调用 `lib.rs` 中的 `run` 函数
+- 处理 `run` 函数可能出现的错误
+
+
+
+### 测试驱动开发 `TDD（Test-Driven Development）`
+
+- 编写一个会失败的测试，运行该测试，确保它是按照预取的原因失败
+- 编写或修改代码，让新测试通过
+- 重构刚刚添加或修改的代码，确保测试始终会通过
+- 返回第一步，继续下一轮的开发
+
+
+
+
+
+### 标准输出与标准错误
+
+- 标准输出：`stdout`
+  - `println!`：可以使用 `cargo run > output.out`
+- 标准错误：`stderr`
+  - `eprintln!`：可以使用 `cargo run > output.out 2>&1`
+
+
+
+### 完整例子
+
+#### 项目结构
+
+```
+demo
+├─ Cargo.lock
+├─ Cargo.toml
+├─ output.txt
+├─ test.txt
+└─ src
+   ├─ lib.rs
+   └─ main.rs
+```
+
+
+
+#### `main.rs`
+
+```rust
+use demo;
+use std::env;
+
+fn main() {
+    // 如果有非ASCII字符，那么collect()会失败发生恐慌
+    let args: Vec<String> = env::args().collect();
+    // env::args_os() 返回OsString可以有非法ASCII字符
+
+    let query = demo::SearchConfig::new(&args).unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {}", err);
+        // code 为 1 表示异常退出， 0 为正常退出
+        std::process::exit(0)
+    });
+    if let Err(e) = demo::run(query) {
+        eprintln!("Application error: {}", e);
+        std::process::exit(0)
+    }
+}
+```
+
+
+
+#### `lib.rs`
+
+```rust
+use std::{env, fs};
+
+#[derive(Debug)]
+pub struct SearchConfig {
+    pub query: String,
+    pub filename: String,
+    pub case_sensitive: bool,
+}
+
+#[derive(Debug)]
+pub struct SearchResult<'a> {
+    pub line_number: usize,
+    pub line_text: &'a str,
+}
+
+impl SearchConfig {
+    pub fn new(args: &[String]) -> Result<SearchConfig, &'static str> {
+        if args.len() < 3 {
+            return Err("Not enough arguments");
+        }
+        // $env:CASE_INSENSITIVE=1 powershell 临时设置环境变量
+        // env::var读取环境变量， is_err() 如果Result错误，返回true, unwrap_or(default) Err时返回默认值
+        let case_sensitive = env::var("CASE_INSENSITIVE").unwrap_or(String::from("0"));
+        println!("case_sensitive: {}", case_sensitive);
+        Ok(SearchConfig {
+            query: args[1].to_string(),
+            filename: args[2].to_string(),
+            case_sensitive: case_sensitive == "1",
+        })
+    }
+}
+
+pub fn run(config: SearchConfig) -> Result<(), Box<dyn std::error::Error>> {
+    let file_text = fs::read_to_string(config.filename)?;
+    let results = if config.case_sensitive {
+        search(&config.query, &file_text)
+    } else {
+        search_case_insensitive(&config.query, &file_text)
+    };
+    for line in results {
+        println!("{:?}", line);
+    }
+    Ok(())
+}
+
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<SearchResult<'a>> {
+    let mut results: Vec<SearchResult> = Vec::new();
+    let mut line_count = 0;
+    for line in contents.lines() {
+        line_count += 1;
+        if line.contains(query) {
+            results.push(SearchResult {
+                line_number: line_count,
+                line_text: line,
+            });
+        }
+    }
+    results
+}
+
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<SearchResult<'a>> {
+    let mut results: Vec<SearchResult> = Vec::new();
+    let mut line_count = 0;
+    let query = query.to_lowercase();
+    for line in contents.lines() {
+        line_count += 1;
+        if line.to_lowercase().contains(&query) {
+            results.push(SearchResult {
+                line_number: line_count,
+                line_text: line,
+            });
+        }
+    }
+    results
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn case_sensitive() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three,
+Duct tape.";
+        let text = crate::search(query, contents);
+        println!("{:?}", text);
+        assert_eq!(1, text.len());
+        assert_eq!(
+            "safe, fast, productive.", text[0].line_text,
+            "search result {:?}",
+            text
+        );
+    }
+
+    #[test]
+    fn case_insensitive() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three,
+Duct tape.";
+        let text = crate::search_case_insensitive(query, contents);
+        println!("{:?}", text);
+        assert_eq!(2, text.len());
+        assert_eq!(
+            "safe, fast, productive.", text[0].line_text,
+            "search result {:?}",
+            text
+        );
+        assert_eq!("Duct tape.", text[1].line_text, "search result {:?}", text);
+    }
+}
+```
+
+
+
+## 二十二、函数式语言特性-迭代器和闭包
+
+### 闭包
+
+>可以捕获器所在环境的匿名函数
+
+- 是匿名函数
+- 保持为变量、作为参数
+- 可在一个地方创建闭包，然后在另一个上下文中调用闭包来完成运算
+
+#### 例子-生成自定义运动计划的程序
+
+- 算法的逻辑不是重点，重点是算法计算过程需要几秒钟时间
+- 目标：不让用户发生不必要的等待
+  - 仅在必要时调用该算法
+  - 只调用一次
