@@ -746,15 +746,15 @@ graph LR
 >           print(f'{fun.name}运行结束')
 >           return v
 >       return task
->                                                                                                               
+>                                                                                                                   
 >      @taskRun
 >       def taskA():
 >           time.sleep(5)
->                                                                                                             
+>                                                                                                                 
 >       @taskRun
 >       def taskB():
 >           time.sleep(8)
->                                                                                                             
+>                                                                                                                 
 >       taskA()
 >       taskB()
 >     
@@ -1090,13 +1090,53 @@ def test(reqeust):
 
 ### `Celery 5.0`各环境运行命令
 
-在`windows`环境下需要依赖eventlet
+在`windows`环境下需要依赖eventlet，没有 eventlet 会导致接收到任务但不会执行
 
 `celery --app=YouAppName worker -P evenlet -l INFO`
 
 `Linux`环境
 
 `celery --app=YouAppName worker -l INFO`
+
+`celery -A YouAppName worker -l INFO`
+
+
+
+### Celery 命令行工具来检查任务状态
+
+1. **查看所有等待的任务**：
+
+bash
+
+```bash
+celery -A proj inspect active
+```
+
+1. **查看等待的任务（不包括正在执行的任务）**：
+
+bash
+
+```bash
+celery -A proj inspect reserved
+```
+
+1. **查看所有任务的状态**：
+
+bash
+
+```bash
+celery -A proj inspect scheduled
+```
+
+1. **查看特定任务的状态**：
+
+bash
+
+```bash
+celery -A proj inspect task <task_id>
+```
+
+这里的 `-A proj` 指的是你的 Celery 应用的模块名。
 
 
 ## 十、协程&asyncio&异步编程
