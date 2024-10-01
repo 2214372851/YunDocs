@@ -4193,6 +4193,7 @@ Duct tape.";
 - 是匿名函数
 - 保持为变量、作为参数
 - 可在一个地方创建闭包，然后在另一个上下文中调用闭包来完成运算
+- 可以从其定义的作用域捕获值
 
 #### 例子-生成自定义运动计划的程序
 
@@ -4200,3 +4201,455 @@ Duct tape.";
 - 目标：不让用户发生不必要的等待
   - 仅在必要时调用该算法
   - 只调用一次
+
+```rust
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let simulated_user_specified_value = 10;
+    let simulated_random_number = 7;
+
+    generate_workout(simulated_user_specified_value, simulated_random_number);
+}
+
+fn generate_workout(intensity: i32, random_number: u32) {
+    let expensive_closure = |num| {
+        println!("calculating slowly...");
+        thread::sleep(Duration::from_secs(2));
+        num
+    };
+    if intensity < 25 {
+        println!("Today, do {} pushups!", expensive_closure(intensity));
+        println!("Next, do {} situps!", expensive_closure(intensity));
+    } else {
+        if random_number == 3 {
+            println!("Task a break today! Remember to stay hydrated!");
+        } else {
+            println!("Today, run for {} minutes!", expensive_closure(intensity));
+        }
+    }
+}
+```
+
+
+
+#### 闭包的类型推断
+
+- 闭包不要求参数和返回值的类型
+- 闭包通常很短小，只在狭小的上下文中工作，编译器通常能推断出类型
+- 可以手动标注
+
+```rust
+fn main() {
+    let my_fn = | num: u32 | -> u32 {
+        num
+    }
+}
+```
+
+
+
+#### 函数和闭包的定义
+
+```rust
+fn add_one_v1 (x: u32) -> u32 { x+1 }
+let add_one_v2 = | x: u32 | -> u32 { x+1 };
+let add_one_v3 = | x | { x+1 };
+let add_one_v4 = | x | x+1;
+```
+
+
+
+#### 缓冲器（Cacher）实现例子
+
+> 使用 Fn Tarit 存储闭包函数（标注类型）
+
+**限制**
+
+1. `Cacher` 实例假定针对不同的参数 `arg`, `value` 方法总会得到同样的值
+   1. 使用 `HashMap` 代替单个值
+2. 只能接收一个 `u32` 类型的参数和 `u32` 类型的返回值
+
+```rust
+use std::thread;
+use std::time::Duration;
+
+struct Cache<T>
+where
+    T: Fn(i32) -> i32,
+{
+    calculation: T,
+    value: Option<i32>,
+}
+
+impl<T> Cache<T>
+where
+    T: Fn(i32) -> i32,
+{
+    fn new(calculation: T) -> Cache<T> {
+        Cache {
+            calculation,
+            value: None,
+        }
+    }
+
+    fn value(&mut self, arg: i32) -> i32 {
+        match self.value {
+            Some(val) => val,
+            None => {
+                let v = self.calculation(arg);
+                self.value = v;
+                v
+            }
+        }
+    }
+}
+
+fn main() {
+    let simulated_user_specified_value = 10;
+    let simulated_random_number = 7;
+
+    generate_workout(simulated_user_specified_value, simulated_random_number);
+}
+
+fn generate_workout(intensity: i32, random_number: u32) {
+    let mut expensive_closure = Cache::new(|num| {
+        println!("calculating slowly...");
+        thread::sleep(Duration::from_secs(2));
+        num
+    });
+    if intensity < 25 {
+        println!("Today, do {} pushups!", expensive_closure.value(intensity));
+        println!("Next, do {} situps!", expensive_closure.value(intensity));
+    } else {
+        if random_number == 3 {
+            println!("Task a break today! Remember to stay hydrated!");
+        } else {
+            println!(
+                "Today, run for {} minutes!",
+                expensive_closure.value(intensity)
+            );
+        }
+    }
+}
+```
+
+
+
+`HashMap` 版
+
+```rust
+use std::collections::HashMap;
+use std::thread;
+use std::time::Duration;
+
+struct Cache<T>
+where
+    T: Fn(i32) -> i32,
+{
+    calculation: T,
+    value: HashMap<i32, i32>,
+}
+
+impl<T> Cache<T>
+where
+    T: Fn(i32) -> i32,
+{
+    fn new(calculation: T) -> Cache<T> {
+        Cache {
+            calculation,
+            value: HashMap::new(),
+        }
+    }
+
+    fn value(&mut self, arg: i32) -> i32 {
+        let result = self.value.get(&arg);
+        match result {
+            Some(v) => *v,
+            None => {
+                let v = (self.calculation)(arg);
+                self.value.insert(arg, v);
+                v
+            }
+        }
+    }
+}
+
+fn main() {
+    let simulated_user_specified_value = 10;
+    let simulated_random_number = 7;
+
+    generate_workout(simulated_user_specified_value, simulated_random_number);
+}
+
+fn generate_workout(intensity: i32, random_number: u32) {
+    let mut expensive_closure = Cache::new(|num| {
+        println!("calculating slowly...");
+        thread::sleep(Duration::from_secs(2));
+        num
+    });
+    if intensity < 25 {
+        println!("Today, do {} pushups!", expensive_closure.value(intensity));
+        println!("Next, do {} situps!", expensive_closure.value(intensity));
+    } else {
+        if random_number == 3 {
+            println!("Task a break today! Remember to stay hydrated!");
+        } else {
+            println!(
+                "Today, run for {} minutes!",
+                expensive_closure.value(intensity)
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn call_with_different_values() {
+        let mut c = Cache::new(|a| a);
+        assert_eq!(c.value(1), 1);
+        assert_eq!(c.value(2), 2);
+        assert_eq!(c.value(2), 2);
+    }
+}
+```
+
+
+
+#### 闭包捕获环境
+
+> 闭包可以捕获他们所在的环境
+
+- 闭包可以访问定义它的作用域内的变量，而普通函数不可以
+- 会产生内存开销
+
+```rust
+fn main() {
+    let x = 4;
+    let equal_to_x = |z| z == x;
+    let y = 4;
+    assert!(equal_to_x(y));
+}
+```
+
+
+
+##### 闭包从所在环境捕获值的方式
+
+- 与函数获得参数的三种方式一样
+
+  - 取得所有权: `FnOnce`
+  - 可变借用: `FnMut`
+  - 不可变借用: `Fn`
+
+- 创建闭包时，通过闭包对环境值的使用，Rust 推断出具体使用哪个 `trait`
+
+  - 所有的闭包都是实现了 `FnOnce`（逐级包含包含下面的`Trait`）
+  - 没有移动捕获变量的实现了 `FnMut`
+  - 无需可变访问捕获变量的闭包实现了 `Fn`
+
+
+
+#### `move` 关键字
+
+- 在参数列表前使用 `move` 关键字，可以强制闭包取得它所使用的环境值的所有权
+  - 当将闭包传递给新线程以移动数据使其归新线程所有时，此技术最为有用
+
+```rust
+fn main() {
+    let x = vec![1, 2, 3];
+    let equal_to_x = move |z| z == x;
+    // println!("{:?}", x); 没有所有权
+    let y = vec![1, 2, 3];
+    assert!(equal_to_x(y));
+}
+```
+
+
+
+#### 最佳实践
+
+- 当指定 `Fn trait bound` 之一时，首先用 `Fn`，基于闭包体里的情况，如果需要 `FnOnce` 或 `FnMut` ，编译器会再告诉你
+
+  
+
+### 迭代器
+
+- 迭代器模式：对一系列项执行某些任务
+- 迭代器负责：
+  - 遍历每一项
+  - 确定序列（遍历）合适完成
+- Rust 的迭代器
+  - 懒惰性：除非调用消费迭代器的方法，否则迭代器本身没有任何效果
+
+
+
+#### `Iterator trait` 
+
+- 所有迭代器都实现了该 `trait`
+- `Iterator trait` 定义与标准库
+
+- `type Item` 和 `Self::Item` 定义了与该 `trait` 关联的类型
+  - 实现 `Iterator trait` 需要定义一个 `Item` 类型，他用于 `next` 方法的返回类型（迭代器的返回类型）
+- 仅要求实现一个方法 `next`
+- `next` ：
+  - 每次返回迭代器中的一项
+  - 返回结果包裹在 `Some` 里
+  - 迭代结束返回 `None`
+
+```rust
+pub trait Iterator {
+    type Item;
+    
+    fn next(&mut self) -> Option<Self::Item>;
+}
+```
+
+
+
+```rust
+fn main() {
+    let x = vec![1, 2, 3];
+    let mut v1_iter = x.iter();
+    println!("val: {}", v1_iter.next())
+}
+```
+
+
+
+#### 迭代方法
+
+- `iter` 方法：在不可变引用上创建迭代器
+- `into_iter` 方法：创建的迭代器会获得所有权
+- `iter_mut` 方法：迭代可变的引用
+
+
+
+#### 消耗迭代器的方法
+
+- 在标准库中，`Iterator trait` 有一些带默认实现的方法
+- 其中有一些方法会调用 `next` 方法
+  - 实现 `Iterator trait` 时必须实现 `next` 方法的原因之一
+- 调用 `next` 的方法叫做 ”消耗型适配器“
+  - 因为调用他们会把迭代器消耗尽
+- 例如： `sum` 方法就会耗尽迭代器
+  - 取得迭代器的所有权
+  - 通过反复调用 `next` ，变量所有元素
+  - 每次迭代，把当前元素添加到一个总和里，迭代结束，返回总和
+
+```rust
+fn main() {
+    let x = vec![1, 2, 3];
+    let x_iter = x.iter();
+    // 类型标前或标后都可以
+    let x_sum: i32 = x_iter.sum::<i32>();
+    println!("val: {}", x_sum)
+}
+```
+
+
+
+#### 产生其它迭代器的方法
+
+- `Iterator trait` 上的另外一些方法叫做 ”迭代器适配器“
+  - 把当前迭代器转换为不同类型的迭代器
+- 可以通过链式调用使用多个迭代器适配器来执行复杂操作，这种调用可读性较高
+- 例如：`map`
+  - 接收一个闭包，闭包作用域每个元素
+  - 产生一个新的迭代器
+
+
+
+```rust
+fn main() {
+    let x = vec![1, 2, 3];
+    let x_iter = x.iter().map(|item| item+1);
+    // 因为惰性所以使用 collect 方法收集迭代项
+    let y: Vec<_> = x_iter.collect();
+    println!("{:?}", y)
+}
+```
+
+
+
+- `filter` 方法：
+  - 接受一个闭包
+  - 这个闭包在遍历迭代器的妹妹个元素时，返回bool类型
+  - 闭包返回为 `true` 那么该元素会包含在 `filter` 产生的迭代器中
+
+
+
+#### 创建自定义迭代器
+
+```rust
+struct Counter {
+    count: u32,
+}
+
+impl Counter {
+    fn new() -> Counter {
+        Counter { count: 0 }
+    }
+}
+
+impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.count < 5 {
+            self.count += 1;
+            Some(self.count)
+        } else {
+            None
+        }
+    }
+}
+
+fn main() {
+    let mut counter = Counter::new();
+    if let Some(x) = counter.next() {
+        println!("{}", x);
+    } else {
+        println!("No more values!");
+    }
+}
+```
+
+
+
+#### 循环与迭代器的性能
+
+> 迭代器性能更好，在编译时有优化
+>
+> 如：消除迭代控制语句等
+
+##### 零开销抽象（`Zero-Cost Abstraction`）
+
+- 使用抽象时不会引入额外的运行时开销
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
