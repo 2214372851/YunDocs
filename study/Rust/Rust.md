@@ -4633,23 +4633,331 @@ fn main() {
 
 
 
+## 二十三、发布crate
+
+#### `crates.io`
+
+- 可以通过发布包共享代码库
+- `crate` 的注册表在 `https://crates.io/`
+  - 他会分发已注册的包的源代码
+  - 主要托管开源代码
+
+
+
+### 文档注释
+
+- 文档注释：用于生成文档
+  - 生成 `HTML` 文档
+  - 显式公共API的文档注释：如何使用 API
+  - 使用 `///`
+  - 支持 `Markdown`
+  - 放置在呗说明条目之前
+- `cargo doc` ：生成 HTML文档命令
+  - 他会运行 `rustdoc` 工具（自带）
+  - 把生成的文档放到 `target/doc` 模块名下的 `index.html`
+- 常用章节
+  - `#Examples` ：示例
+  - `#Panics` ：函数肯发生 `panic` 的场景
+  - `#Errors` ：如果函数返回 `Result`，描述可能的错误种类，以及可导致错误的条件
+  - `#Safety` ：如果函数处于 `unsafe`调用，就应该解释函数 `unsafe` 的原因，以及调用者确保的使用前提
+
+
+
+#### 文档注释作为测试
+
+> 文档注释中的示例会在 `cargo test` 时当作测试执行
+
+
+
+### 为包含注释的项添加文档注释
+
+- 符号：`//!`
+- 描述外层模块（不是描述之后的）
+- 这类注释通常描述 `crate` 和模块
+  - `crate root` （按照惯例 `src/lib.rs`）
+  - 一个模块呗，将 `crate` 或模块作为一个整体进行记录
+
+
+
+```rust
+//! # demo crate
+//!
+//! `demo` is a simple demo crate.
+
+
+/// 添加一的一个函数
+/// # Examples
+///
+/// ```
+/// use demo::add_one;
+/// let arg = 6;
+/// let add = add_one(arg);
+/// assert_eq!(add, 7);
+/// ```
+///
+pub fn add_one (x: i32) -> i32 {
+    x + 1
+}
+```
+
+
+
+### `pub use` 导出方便使用的公共 API
+
+- 问题：`crate` 的抽象结构在开发时对开发者很河里，但是对于使用者不方便
+  - 开发者会把抽象结构才分为多层，使用者想找到这种深层次结构中的某个类型很费劲
+- 例如：
+  - 麻烦：`demo::number_tools::add_module::AddType;`
+  - 方便：`demo::AddType;`
+- 解决办法：
+  - 不需要重新组织内部代码结构
+  - 使用 `pub use` ：可以重新带出，创建一个内部私有结构不同的对外公共结构
+
+```rust
+//! # demo
+//!
+//! A crate for learning about rust
+
+
+pub use self::kinds::*;
+pub use self::utils::*;
+
+
+pub mod kinds {
+    /// The primary colors according to the RGB color model.
+    pub enum PrimaryColor {
+        Red,
+        Yellow,
+        Blue,
+    }
+    /// The secondary colors according to the RGB color model.
+    pub enum SecondaryColor {
+        Orange,
+        Green,
+        Purple,
+    }
+}
+
+pub mod utils {
+    use crate::kinds::*;
+
+    /// Mix two primary colors in equal amounts to create a secondary color.
+    pub fn mix(c1: PrimaryColor, c2: PrimaryColor) -> SecondaryColor {
+        SecondaryColor::Green
+    }
+}
+```
+
+
+
+### 发布 `Crates.io` 
+
+- 发布  `crate` 之前，需要在 `crates.io` 船舰账号并获得 API token
+- 运行命令：`cargo login <API token>`
+  - 通知 `cargo` 把 API token 存储在本地的 `~/.cargo/credentials`
+- API token 可以在官网撤销
+- 配置 `cargo.toml`
+- 发布 `cargo publish`
+
+```toml
+[package]
+# name 必须独一无二
+name = "demo"
+description = "简洁描述，出现在crate搜索结果里"
+version = "0.1.0"
+authors = ["YunHai"]
+edition = "2024"
+# 许可证 开源协议 http://spdx.org/licenses/ 多个许可使用 OR 隔开
+license = "MIT"
+```
+
+>`crate` 一旦发布，就是永久性的：版本无法覆盖，代码无法删除，确保依赖该版本的项目可以继续正常工作
+
+
+
+### 更新版本
+
+- 修改配置文件中的 `version` 再进行发布
+
+
+
+### 撤回版本
+
+- 不可以删除 `crate` 之前的版本
+- 但是可以防止新的项目依赖该版本：`yank` （撤回）一个 `crate` 版本
+- `yank` 意味着：
+  - 所有已近产生 `Cargo.lock` 的项目不会中断
+  - 任何将来生成的 `Cargo.lock` 文件都不会使用被 `yank` 的版本
+- `cargo yank --vers 1.0.1` 撤回版本
+- `cargo yank --vers 1.0.1 --undo` 取消撤回版本
+
+
+
+### 安装二进制 `crate`
+
+> 从 `crates.io` 安装二进制 crate
+
+- 命令：`cargo install`
+- 来源：`https://crates.io`
+- 限制：只能安装具有二进制目标（`binary target`）的 `crate`
+- 二进制目标 `binary target`：是一个可执行文件
+  - 由拥有 `arc/main.rs` 或其他被指定为二进制文件的 `crate` 生成
+- 通常：`README` 中有关于 ` crate` 的描述
+  - 拥有 `library target`
+  - 拥有 `binary target`
+  - 两者皆有
+- 需要在环境变量中，才可以直接运行
 
 
 
 
 
+## 二十四、`Cargo` 工作空间（`Workspaces`）
+
+- `cargo` 工作空间：帮助管理多个相互关联且需要协同开发的 `crate`
+- `cargo` 工作空间是一套共享同一个 `Cargo.lock` 和输出文件夹的包
 
 
 
+### 创建工作空间
+
+- 有多种方式来组建工作空间例子：一个二进制 `crate` ，两个库 `crate`
+  - 二进制 `crate` ：`main` 函数，依赖于其他两个库
+  - 其中一个库的 `crate` 提供 `add_one` 函数
+  - 另一个库提供 `add_two` 函数
 
 
 
+创建工作空间并创建 `toml` 文件
+
+```bash
+(base) PS D:\CodeData\Rust> cd .\workspaces\
+(base) PS D:\CodeData\Rust\workspaces> touch Cargo.toml
+(base) PS D:\CodeData\Rust\workspaces> cargo new adder
+(base) PS D:\CodeData\Rust\workspaces> cargo new add-one --lib
+```
 
 
 
+`workspaces/Cargo.toml`
+
+```toml
+[workspace]
+# 兼容新版 否则会警告
+resolver = "2"
+# 生命下面的工作crate
+members = ["add-one", "adder"]
+
+```
 
 
 
+> 要使用依赖 `crate` 需要声明
+
+`workspaces/adder/Cargo.toml`
+
+```toml
+[package]
+name = "adder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# 声明依赖关系
+add-one = { path = "../add-one" }
+```
 
 
 
+> 运行 `crate` 使用 `cargo run -p adder`
+
+
+
+### 在工作空间中依赖外部 `crate`
+
+> 工作空间只用一个 `Cargo.lock` 文件，在工作空间的顶层目录，保证了工作空间内 `crate` 使用的依赖版本都相同
+
+
+
+### 工作空间测试
+
+#### 全部测试
+
+`cargo test`
+
+#### 单个 `crate` 测试
+
+`cargo test -p adder`
+
+
+
+### 工作空间发布
+
+> 手动进入 `crate` 逐个发布
+
+
+
+## 二十五、自定义命令拓展 `cargo`
+
+- `cargo` 被设计成可以使用子命令来拓展
+- 例如：如果 环境变量中的某个二进制是 `cargo-something`，你可以像子命令一样运行：`cargo something`
+- 查看自定义命令列表：`cargo --list`
+- 优点：可以使用 `cargo install` 来安装扩展，就像内置工具一样来运行
+
+
+
+## 二十六、智能指针
+
+- 指针：一个变量在内存中包含的是一个地址（指向其他数据）
+
+- Rust 中最常见的指针就是 “引用”
+- 引用：
+  - 使用 `&`
+  - 借用它指向的值
+  - 没有其余开销
+  - 最常见的指针类型
+- 智能指针
+  - 是指特殊的一些数据结构
+  - 行为和指针相似
+  - 有额外的元数据和功能
+
+
+
+### 引用计数（`reference counting`）智能指针类型
+
+- 通过记录所有者的数量，使用一份数据被多个所有者同时持有
+- 并在没有任何所有者时自动清理数据
+
+
+
+### 引用和智能指针的其他不同
+
+- 引用：只借用数据
+- 智能指针：很多时候都拥有它所指向的数据
+
+
+
+### 智能指针例子
+
+- `String` 和 `Vec<T>`
+- 都拥有一篇内存区域，且运行用户对其操作
+- 还拥有元数据（例如容量等）
+- 提供额外的功能或保障（`String` 保障其数据是合法的 `UTF-8` 编码）
+
+
+
+### 智能指针的实现
+
+- 智能指针通常使用 `struct` 实现，并且实现了 `Deref` 和 `Drop` 这两个 `trait`
+- `Deref trait` ：允许智能指针 `struct` 的实例像引用一样使用
+- `Drop trait` ：允许自定义当指针示例走出作用域时的代码
+
+
+
+### 常见的智能指针
+
+- `Box<T>` ：在 `heap` 内存上分配值
+- `Rc<T>` ：启用多重所有权的引用计数类型
+- `Ref<T>` 和 `Ref<T>` ，通过 `RefCell<T>` 访问：在运行时而不是编译时强制借用规则的类型
+- 内部可变模式（`interior mutability pattern`）：不可变类型暴露出可修改内部值的 API
+- 引用循环（reference cycles）：他们如何泄漏内存，以及如何防止其发生
