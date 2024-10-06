@@ -2,11 +2,133 @@
 
 
 
+## 网络请求
+
+[HTTPX](https://www.python-httpx.org/)
+
+
+
+## 简单表格处理
+
+[Tablib](https://tablib.readthedocs.io/en/stable/)
+
+
+
+## 自动化运维
+
+[pyinfra](https://docs.pyinfra.com/en/next/index.html)
+
+
+
+## 全能解压库
+
+[patool](https://wummel.github.io/patool/)
+
+
+
+## 项目规范
+
+> 基于 `pyproject.toml` 的全新项目规范
+
+[原文](https://zhuanlan.zhihu.com/p/666166082)
+
+
+
+## 脚本加密
+
+<iframe style="height: 400px;width: 100%;" src="https://pyarmor.readthedocs.io/zh/stable/index.html"/>
+
+
+
+## 时间函数strftime与strptime
+
+> **strftime：** 将给定格式的日期时间对象转换为字符串。**日期时间对象=>字符串，控制输出格式**
+>
+> **strptime：**将字符串解析为给定格式的日期时间对象。**字符串=>日期时间对象，解析字符串**
+
+|      | strftime                                                     | strptime                                                    |
+| ---- | ------------------------------------------------------------ | ----------------------------------------------------------- |
+| 用法 | 根据给定的格式将对日期时间象转换为字符串                     | 将字符串解析为给定相应格式的datetime 对象                   |
+| 类型 | 实例方法                                                     | 类方法                                                      |
+| 方法 | date; datetime; time                                         | datetime                                                    |
+| 用法 | strftime(format)                                             | strptime(date_string, format)                               |
+| 示例 | datetime.datetime(2006, 11, 21, 16, 30) => '2006-11-21 16:30' | "21/11/06 16:30" => datetime.datetime(2006, 11, 21, 16, 30) |
+
+### strftime函数
+
+> **作用：**将给定格式的日期时间对象转换为字符串。**日期时间对象=>字符串，控制日期时间对象的输出格式，**date、datetime、time对象都支持strftime(format) 方法，可用来创建由一个显式格式字符串所控制的表示时间的字符串。要获取格式指令的完整列表，查看文末列表。
+>
+> **用法：**datetime.strftime(format)
+
+```python
+import datetime
+dt=datetime.datetime(2006, 11, 21, 16, 30)
+dt.strftime("%Y-%m-%d %H:%M")
+'2006-11-21 16:30'
+
+dt.strftime("%Y-%m-%d")
+'2006-11-21'
+
+dt.strftime("%A, %d. %B %Y %I:%M%p")
+'Tuesday, 21. November 2006 04:30PM
+```
+
+### strptime函数
+
+>**作用：**按照特定时间格式将字符串转换（解析）为时间类型。返回一个由显式格式字符串所指明的代表时间的字符串。 要获取格式指令的完整列表，查看文末列表。
+>
+>**语法：**datetime.strptime(date_string, format)
+
+```python
+import datetime
+dt=datetime.datetime.strptime("21/11/06 16:30", "%d/%m/%y %H:%M")
+print(dt)
+2006-11-21 16:30:00
+dt
+datetime.datetime(2006, 11, 21, 16, 30)
+```
+
+> strftime是转换为特定格式输出，而strptime是将一个（时间）字符串解析为时间的一个类型对象。
+
+### 格式指令的完整列表
+
+| %y   | 两位数的年份表示（00-99）                 |
+| ---- | ----------------------------------------- |
+| %Y   | 四位数的年份表示（000-9999）              |
+| %m   | 月份（01-12）                             |
+| %d   | 月内中的一天（0-31）                      |
+| %H   | 24小时制小时数（0-23）                    |
+| %I   | 12小时制小时数（01-12）                   |
+| %M   | 分钟数（00=59）                           |
+| %S   | 秒（00-59）                               |
+| %a   | 本地简化星期名称                          |
+| %A   | 本地完整星期名称                          |
+| %b   | 本地简化的月份名称                        |
+| %B   | 本地完整的月份名称                        |
+| %c   | 本地相应的日期表示和时间表示              |
+| %j   | 年内的一天（001-366                       |
+| %p   | 本地A.M.或P.M.的等价符                    |
+| %U   | 一年中的星期数（00-53）星期天为星期的开始 |
+| %w   | 星期（0-6），星期天为星期的开始           |
+| %W   | 一年中的星期数（00-53）星期一为星期的开始 |
+| %x   | 本地相应的日期表示                        |
+| %X   | 本地相应的时间表示                        |
+| %Z   | 当前时区的名称                            |
+| %%   | %号本身                                   |
+
+## 三方库拉取信息查看
+
+> 为包管理者提供的简易界面
+
+<iframe style="height: 600px;width: 100%;" src="https://pypistats.org/packages/yundownload"/>
+
+
+
 ## TUI模块
 
 > 包含常用的进度条、表格输出等功能
 
-<iframe style="height: 600px" src="https://www.osgeo.cn/rich/console.html"/>
+<iframe style="height: 600px;width: 100%;" src="https://www.osgeo.cn/rich/console.html"/>
 
 
 
@@ -678,13 +800,13 @@ os.path.basename('c:\\xxx\\xxx.txt')
 os.path.dirname('c:\\xxx\\xxx.txt')
 ```
 
-# 浏览器自动化
+## 浏览器自动化
 
 undetected_chromedriver
 
 可以自动匹配驱动
 
-# 上下文管理（contextlib）
+## 上下文管理（contextlib）
 
 ```python
 from contextlib import contextmanager
@@ -705,7 +827,7 @@ with contextlib.closing(open('1.txt')) as f:
     f.read()
 ```
 
-# try语句
+## try语句
 
 ```python
 #把不能保证正常运行的代码放到try
@@ -718,7 +840,7 @@ finally:
 except:
 ```
 
-# wave:处理WAV格式音频库
+## wave:处理WAV格式音频库
 
 ```python
 #打开文件	mode r,w普通读写	rb, wb 读写二进制文件
@@ -726,7 +848,7 @@ except:
 wave.open(file, mode=None)
 ```
 
-## Wave_read对象的方法
+### Wave_read对象的方法
 
 ```python
 import wave
@@ -737,7 +859,7 @@ print(wav.getchannels(), wav.getsampwidth(), wav.getframerate(), getnframes())
 #wav.getparams()得到一个namedtuple(nchannels, sampwidth, framerate, nframes, comptype, compname)
 ```
 
-## Wave_write对象的方法
+### Wave_write对象的方法
 
 ```python
 # wave.write 对象方法
@@ -756,11 +878,11 @@ wav.writeframes(data) # 写入音频帧并确保 nframes 是正确的
 wav.close()
 ```
 
-# assert关键字（断言）
+## assert关键字（断言）
 
 判断assert后面的是不是对的，不是对的会给你一个报错，且后面的代码不会继续执行了
 
-# enumerate关键词(枚举)
+## enumerate关键词(枚举)
 
 ```python
 >>> seasons = ['Spring', 'Summer', 'Fall', 'Winter']
@@ -770,7 +892,7 @@ wav.close()
 
 
 
-# collections：容器库
+## collections：容器库
 
 - Counter：字典的子类，提供了可哈希对象的计数功能
 

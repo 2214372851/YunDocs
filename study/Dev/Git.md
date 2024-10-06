@@ -62,8 +62,6 @@ git reset --hard origin/[branch-name]
 
 `git branch -m master main`
 
-## x # 全局配置，设置运行用户，worker数量，日志参数user  nginx;worker_processes  auto;​error_log  /var/log/nginx/error.log notice;pid        /var/run/nginx.pid;​# Nginx性能设置events {    worker_connections  1024;}​# http部署功能http {    include       /etc/nginx/mime.types;    default_type  application/octet-stream;​    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '                      '$status $body_bytes_sent "$http_referer" '                      '"$http_user_agent" "$http_x_forwarded_for"';        # 关于http请求与响应的优化参数，如压缩缓存等    access_log  /var/log/nginx/access.log  main;​    sendfile        on;    #tcp_nopush     on;​    keepalive_timeout  65;​    #gzip  on;        # 动态导入目录下的配置文件    include /etc/nginx/conf.d/*.conf;}nginx
-
 消息格式：`git commit -m "[标识]：message"`
 
 feat: 新功能增加
@@ -91,6 +89,8 @@ ci: 持续集成
 types: 类型定义文件更改
 
 wip: 开发中
+
+
 
 ## GitHub Actions
 
