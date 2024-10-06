@@ -1,8 +1,169 @@
-# Python 简查
+# Python 技巧与库
+
+
+
+## TUI模块
+
+> 包含常用的进度条、表格输出等功能
+
+<iframe style="height: 600px" src="https://www.osgeo.cn/rich/console.html"/>
+
+
+
+## 表格打印
+
+`pip install prettytable`
+
+```python
+from prettytable import PrettyTable
+
+table = PrettyTable(['title', 'img_url'])
+table.add_row(['title', 'img_url'])
+print(table)
+```
+
+
 
 ## 多因子身份验证
 
 [PyOTP](https://pyauth.github.io/pyotp/) 是一个用与生成和验证一次性密码的python库.它可以用于Web应用程序和其它需要用户登录的系统中实现双因素（2FA）或多因素（MFA）身份验证方法。
+
+### 安装和配置PyOTP
+
+安装PyOTP非常简单，只需要使用pip命令：
+
+```
+pip install pyotp
+```
+
+PyOTP没有复杂的依赖关系，安装过程通常很顺利。但是，如果你在安装过程中遇到权限问题，可以尝试使用`--user`标志：
+
+```
+pip install --user pyotp
+```
+
+安装完成后，你可以通过以下代码来验证安装是否成功：
+
+```
+import pyotp
+print(pyotp.__version__)
+```
+
+如果能正确打印出版本号，说明安装成功。
+
+### PyOTP的核心概念
+
+PyOTP的核心概念非常简单，主要包括以下几点：
+
+1. 1. **密钥（Secret Key）**：用于生成一次性密码的基础。
+2. 2. **TOTP（基于时间的一次性密码）**：根据当前时间和密钥生成的一次性密码。
+3. 3. **HOTP（基于HMAC的一次性密码）**：根据计数器和密钥生成的一次性密码。
+4. 4. **URI**：用于在不同设备间共享OTP配置的标准格式。
+
+让我们通过一个简单的例子来了解TOTP的基本用法：
+
+```
+import pyotp
+
+# 生成一个随机密钥
+secret = pyotp.random_base32()
+
+# 创建一个TOTP对象
+totp = pyotp.TOTP(secret)
+
+# 生成当前的一次性密码
+otp = totp.now()
+print(f"Current OTP: {otp}")
+
+# 验证一次性密码
+is_valid = totp.verify(otp)
+print(f"OTP is valid: {is_valid}")
+```
+
+这个例子展示了如何生成一个TOTP密码并验证它。PyOTP的API设计非常直观，使得实现2FA变得异常简单。
+
+### 进阶技巧：自定义TOTP参数
+
+PyOTP允许我们自定义TOTP的各种参数，以满足特定的安全需求。例如，我们可以更改OTP的长度，或者调整OTP的有效时间：
+
+```python
+import pyotp
+
+# 创建一个8位数的TOTP，有效期为60秒
+totp = pyotp.TOTP(pyotp.random_base32(), digits=8, interval=60)
+
+otp = totp.now()
+print(f"Custom OTP: {otp}")
+```
+
+这个例子创建了一个8位数的TOTP，有效期为60秒。通过调整这些参数，我们可以在安全性和用户体验之间找到平衡点。
+
+### 实战案例：为Web应用添加2FA
+
+让我们通过一个简单的Flask应用来展示如何使用PyOTP实现2FA：
+
+```python
+from flask import Flask, request, jsonify
+import pyotp
+
+app = Flask(__name__)
+
+# 模拟用户数据库
+users = {
+    'alice': {
+        'password': 'password123',
+        'otp_secret': pyotp.random_base32()
+    }
+}
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    otp = request.json.get('otp')
+
+    if username not in users or users[username]['password'] != password:
+        return jsonify({'message': 'Invalid username or password'}), 401
+
+    totp = pyotp.TOTP(users[username]['otp_secret'])
+    if not totp.verify(otp):
+        return jsonify({'message': 'Invalid OTP'}), 401
+
+    return jsonify({'message': 'Login successful'}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+这个例子展示了如何在登录过程中集成TOTP验证。用户需要提供用户名、密码和当前的OTP才能成功登录。
+
+### PyOTP的实用小技巧
+
+1. 1. **生成QR码**：PyOTP可以生成兼容Google Authenticator的URI，我们可以将这个URI转换为QR码，方便用户扫描：
+
+```
+import pyotp
+import qrcode
+
+totp = pyotp.TOTP('base32secret3232')
+uri = totp.provisioning_uri("alice@google.com", issuer_name="Secure App")
+
+qr = qrcode.QRCode(version=1, box_size=10, border=5)
+qr.add_data(uri)
+qr.make(fit=True)
+
+img = qr.make_image(fill_color="black", back_color="white")
+img.save("qr.png")
+```
+
+1. 1. **时间漂移处理**：在实际应用中，客户端和服务器的时间可能存在微小差异。PyOTP允许我们在验证时考虑这种时间漂移：
+
+```
+totp = pyotp.TOTP('base32secret3232')
+totp.verify('492039', valid_window=1)  # 允许前后30秒的误差
+```
+
+
 
 ## 脚手架模板
 
@@ -165,6 +326,8 @@ plugins:
 `mkdocs gh-deploy`
 
 
+
+
 ## 网页防盗链
 
 溯源找上级URL，如果没有请求非法
@@ -176,7 +339,12 @@ plugins:
 ```
 
 ## 简易FTP文件服务
+
+> 创建简易的http文件服务器（不推荐在生产环境使用应当选择 `nginx` 等）
+
 `python -m http.server 80`
+
+
 
 ## 代理
 
@@ -189,9 +357,11 @@ proxies = {
 requests.get(url,proxies=proxies)
 ```
 
+
+
 ## 进程（资源单位）
 
-每个进程至少要有一个线程
+> 每个进程至少要有一个线程
 
 ### 多进程（不建议，内存消耗太大）
 
@@ -204,7 +374,7 @@ from multiprocessing import process
 
 ## 线程（运行单位）
 
-启动每个程序默认有一个主线程
+> 启动每个程序默认有一个主线程
 
 ### 多线程
 
@@ -334,7 +504,7 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
-爬虫里
+爬虫中
 
 ```python
 async def get(url):
@@ -382,7 +552,7 @@ os.system()
 
 
 
-## 加密解密
+## 加密解密模块
 
 ```python
 #python 在 Windows下使用AES时要安装的是pycryptodome 模块xxxxxxxxxx from Crypotpython 在 Windows下使用AES时要安装的是pycryptodome 模块
@@ -391,7 +561,7 @@ pip install pycryptodome
 pip install pycrypto
 ```
 
-## re正则
+## re正则匹配
 
 ```python
 #匹配所有符合的内容a是正则表达式b是要匹配的文本,返回的是列表
