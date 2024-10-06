@@ -60,7 +60,13 @@ export default defineConfig({
             '/study': [
                 {
                     text: 'Tools',
-                    link: '/study/Tools'
+                    collapsed: true,
+                    items: [
+                        {text: 'AI', link: '/study/Tools/AI'},
+                        {text: '常用命令', link: '/study/Tools/常用命令'},
+                        {text: '网页工具', link: '/study/Tools/网页工具'},
+
+                    ]
                 },
                 {
                     text: 'Python',
