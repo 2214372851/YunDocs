@@ -12,6 +12,17 @@
 
 [Tablib](https://tablib.readthedocs.io/en/stable/)
 
+> 添加 newline 参数来避免写入时csv出现空行
+
+```python
+import tablib
+
+dataset = tablib.Dataset()
+
+with open("temp.csv", "w", "w", encoding='utf-8', newline="") as f:
+    f.write(dataset.export(format="csv"))
+```
+
 
 
 ## 自动化运维
