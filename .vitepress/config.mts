@@ -78,7 +78,6 @@ export default defineConfig({
                         {text: 'Django', link: '/study/Python/Django'},
                         {text: 'Django REST framework', link: '/study/Python/Django REST framework'},
                         {text: 'FastAPI', link: '/study/Python/FastAPI'},
-                        {text: 'DrissionPage', link: '/study/Python/DrissionPage'},
                         {text: 'gRPC', link: '/study/Python/gRPC'},
                         {text: 'PySide', link: '/study/Python/PySide'},
                         {text: 'Numpy与Pandas', link: '/study/Python/Numpy与Pandas'},
