@@ -4961,3 +4961,160 @@ add-one = { path = "../add-one" }
 - `Ref<T>` 和 `Ref<T>` ，通过 `RefCell<T>` 访问：在运行时而不是编译时强制借用规则的类型
 - 内部可变模式（`interior mutability pattern`）：不可变类型暴露出可修改内部值的 API
 - 引用循环（reference cycles）：他们如何泄漏内存，以及如何防止其发生
+
+
+
+### 使用 `Box<T>` 来指向 `Heap` 上的数据 
+
+- `Box<T>` 是最简单的智能指针
+  - 运行在 `heap` 上存储数据（而不是 `stack`）
+  - `stack` 上是指向 `heap` 数据的指针
+  - 没有性能开销
+  - 没有其他额外功能
+  - 实现了 `Deref trait` 和 `Drop trait`
+- 使用场景
+  - 在编译时，某个类型的大小无法确定。但使用该类型时，上下文却需要知道它的确切大小
+  - 当你有大量数据，想移交所有权，但需要确保在操作时数据不会被复制
+  - 使用某个值时，只关心它是否实现了特定的 `trait` 而不关心它的具体类型
+
+#### 使用 `Box<T>` 在 `heap` 上存储数据
+
+```rust
+fn main() {
+    let b = Box::new(5);
+    println!("b = {}", b);
+}
+```
+
+
+
+#### 使用 `Box` 赋能递归类型
+
+- 在编译时, Rust 需要知道一个类型所占空间大小
+- 而递归类型的大小无法在编译时确定
+- 但 `Box` 类型的大小确定
+- 在递归类型中使用 `Box` 就可以解决上述问题
+- 函数式语言中的 `Cons List`
+  - 来自 Lisp 语言的一种数据结构
+  - 其中的每个成员由两个元素组成
+    - 当前值
+    - 下一个元素
+  - 最后一个成员只包含一个 `Nil` 值（终止标记）， 没有下一个元素
+- `Cons List` 并不是 Rust 的常用集合
+  - 通常 `Vec<T>` 是更好的选择
+- 创建一个 `Cons List`
+
+```rust
+// 无法确定大小无法运行
+enum List { // [!code error]
+    Cons(i32, List), // [!code error]
+    Nil, // [!code error]
+} // [!code error]
+```
+
+- Rust 如何确定为枚举分配的空间大小
+
+```rust
+// 变体中占用最大的变体大小就是该枚举的大小 Quit 认为不占大小
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+```
+
+- 使用 `Box` 来获得确定大小的递归类型
+
+  - `Box<T>` 是一个指针，Rust 知道他需要多少空间
+    - 指针的大小不会具有与它指向的数据大小变化而变化
+
+  ```rust
+  enum List {
+      Cons(i32, Box<List>),
+      Nil,
+  }
+  ```
+
+- `Box<T>`
+
+  - 只提供了 “间接” 存储和 `heap` 内存分配的功能
+  - 没有其它额外功能
+  - 没有性能开销
+  - 适用于需要 “间接” 存储的场景，例如：`Cons List`
+  - 实现了 `Deref trait`（运行把值当作引用处理） 和 `Drop trait`（当离开作用域时 `heap` 上的数据以及指针数据都会被自动清理）
+
+
+
+### `Deref Trait`
+
+- 实现 `Deref Trait` 使我们可以之定义解引用运算符 `*` 的行为
+- 通过实现 `Deref`，智能指针可以像常规引用一样来处理
+
+#### 解引用运算符
+
+- 常规引用是一种指针
+
+```rust
+fn main() {
+    let x = 5;
+    let y = &x;
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+}
+```
+
+
+
+#### 把 `Box<T>` 当作引用
+
+- `Box<T>` 可以代替上例中的引用
+
+```rust
+fn main() {
+    let x = 5;
+    let y = Box::new(x);
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+}
+```
+
+
+
+#### 自定义智能指针
+
+- `Box<T>` 被定义为拥有一个元素的 `tuple struct`
+- 实现 `Deref Trait`
+  - 标准库中的 `Deref Trait` 要求实现一个 `deref` 方法
+    - 该方法借用 `self`
+    - 返回一个内部数据的引用
+
+```rust
+use std::ops::Deref;
+
+struct MyBox<T>(T);
+
+impl<T> MyBox<T> {
+    fn new(x: T) -> MyBox<T> {
+        MyBox(x)
+    }
+}
+impl<T> Deref for MyBox<T> {
+    // 关联类型 Deref中用于表示解引用后值的类型
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+fn main() {
+    let x = 5;
+    let y = MyBox::new(x);
+    assert_eq!(5, *y)
+    // 隐式的 *(y.deref())
+}
+```
+
+
+
