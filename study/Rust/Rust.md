@@ -849,7 +849,7 @@ fn main() {
 
       - `&mut String` 可变引用
 
-    - 可变引用在一个特定的作用域内，对某一块数据，支农有一个可变引用
+    - 可变引用在一个特定的作用域内，对某一块数据，只能有一个可变引用
 
       - 在编译时防止数据竞争
 
@@ -5118,3 +5118,376 @@ fn main() {
 
 
 
+#### 函数和方法的隐式解引用转化（`Deref Coercion`）
+
+- 隐式解引用转化（`Deref Coercion`）是为函数和方法提供的一种便捷特性
+- 假设 `T` 实现了 `Deref trait`
+  - `Deref Coercion` 可以把 `T` 的引用转化为 `T` 结果 `Deref` 操作后生成的引用
+- 当把某类型的引用传递给函数或方法时，但他的类型与定义的参数类型不匹配
+  - `Deref Coercion` 就会自动发生
+  - 编译器会对 `deref` 进行一系列调用，来把他转为所需的参数类型
+    - 编译时完成，运行时没有额外性能开销
+
+```rust
+use std::ops::Deref;
+
+struct MyBox<T>(T);
+
+impl<T> MyBox<T> {
+    fn new(x: T) -> MyBox<T> {
+        MyBox(x)
+    }
+}
+impl<T> Deref for MyBox<T> {
+    // 关联类型
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+fn hello(name: &str) {
+    println!("Hello, {}!", name);
+}
+fn main() {
+    let m = MyBox::new(String::from("Rust"));
+    // &m &MyBox<String>
+    // deref &MyBox<String> -> &String
+    // deref &String -> &str
+    hello(&m);
+    hello(&(*m)[..]); // 没有deref的写法 [..]指示切片 ..指定范围
+    hello("Rust");
+}
+```
+
+
+
+#### 解引用与可变性
+
+- 可使用 `DerefMut trait` 重载可变引用的 `*` 运算符
+- 在类型和 `trait` 在下列三种情况发生时，Rust 会执行 `deref coercion`：
+  - 当 `T: Deref<Target=U>`，允许 `&T` 转换为 `&U`
+  - 当 `T: Deref<Target=U>`，允许 `&mut T` 转换为 `&mut U`
+  - 当 `T: Deref<Target=U>`，允许 `&mut T` 转换为 `&U`
+    - 根据所有权规则 不可变引用 不能转为 可变引用
+
+
+
+### `Drop Trait`
+
+- 实现 `Drop Trait`，可以自定义当值将要离开作用域时发生的动作
+  - 例如：文件、网络资源释放等
+  - 任何类型都可以实现 `Drop trait`
+- `Drop trait` 只要求你实现 `drop` 方法
+  - 参数：对 `self` 的可变引用
+- `Drop trait` 在预导入模块里（`prelude`）
+
+```rust
+struct CustomSmartPtr {
+    data: String,
+}
+
+impl Drop for CustomSmartPtr {
+    fn drop(&mut self) {
+        println!("Dropping CustomSmartPtr with data `{}`!", self.data)
+    }
+}
+
+fn main() {
+    let _a = CustomSmartPtr {
+        data: String::from("my stuff"),
+    };
+    let _b = CustomSmartPtr {
+        data: String::from("other stuff"),
+    };
+
+    println!("CustomSmartPtr created.");
+}
+```
+
+
+
+#### 使用 `std::mem::drop` 来提前 `drop` 值
+
+- 很难直接禁用自动的 `drop` 功能，也没必要
+  - `Drop trait` 的目的就是进行自动的释放处理逻辑
+- Rust 也不允许手动调用 `Drop trait` 的 `drop` 方法
+- 但可以调用标准库的 `std::mem::drop` 函数，来提前 `drop` 值（在预导入模块中）
+
+```rust
+struct CustomSmartPtr {
+    data: String,
+}
+
+impl Drop for CustomSmartPtr {
+    fn drop(&mut self) {
+        println!("Dropping CustomSmartPtr with data `{}`!", self.data)
+    }
+}
+
+fn main() {
+    let a = CustomSmartPtr {
+        data: String::from("my stuff"),
+    };
+    drop(a); // 手动释放，不会出现重复释放
+    let _b = CustomSmartPtr {
+        data: String::from("other stuff"),
+    };
+
+    println!("CustomSmartPtr created.");
+}
+```
+
+
+
+### `Rc<T>` 引用计数智能指针
+
+> Python 垃圾回收机制
+
+- 有时一个值会有多个所有者
+- 为了支持多重所有权：`Rc<T>`
+  - `reference couting`（引用计数）
+  - 追踪所有到值的引用
+  - 0个引用：该值可以被清理掉
+
+
+
+#### 使用场景
+
+- 需要在 `heap` 上分配数据，这些数据被程序的多个部分读取（只读），但在编译时无法确定那个部分最后使用完这些数据
+
+- `Rc<T>` 只能用于单线程场景
+- `Rc<T>` 不在预导入模块（`prelude`）
+- `Rc::clone(&a)` 函数：增加引用计数
+- `Rc::strong_count(&a)` 获得当前强引用计数的值
+  - `Rc::weak_count` 函数：弱引用
+
+- 例子
+  - 两个 `List` 共享 另一个 `List` 的所有权
+
+```rust
+enum List {
+    Cons(u32, Rc<List>),
+    Nil,
+}
+
+use std::rc::Rc;
+fn main() {
+    let a = Rc::new(List::Cons(1, Rc::new(List::Cons(2, Rc::new(List::Nil)))));
+    println!("count after creating a = {}", Rc::strong_count(&a));
+    // a.clone(); 可能导致深拷贝
+    // Rc::clone(&a); 增加计数器
+    let _b = List::Cons(3, Rc::clone(&a));
+    println!("count after creating b = {}", Rc::strong_count(&a));
+    {
+        let _c = List::Cons(4, Rc::clone(&a));
+        println!("count after creating c = {}", Rc::strong_count(&a))
+    }
+    println!("count after c goes out of scope = {}", Rc::strong_count(&a));
+}
+```
+
+
+
+#### `Rc::clone()` 与 类型的 `clone()` 方法
+
+- `Rc::clone()` 增加引用，不会执行数据的深度拷贝操作
+- 类型的 `clone()` 很多会执行数据的深度拷贝操作
+
+
+
+#### `Rc<T>` 
+
+- `Rc<T>` **通过不可变引用**，使你可以在程序不同部分之间共享只读数据
+  - 可变引用会导致数据竞争
+
+
+
+### `RefCell<T>` 和内部可变性
+
+#### 内部可变性
+
+- 内部可变性是 Rust 的设计模式之一
+- 它允许在支持有不可变引用的前提下对数据进行修改
+  - 数据结构中使用了 `unsafe` 代码来绕过 Rust 正常的可变性和借用规则
+
+
+
+#### `RefCell<T>`
+
+- 与 `Rc<T>` 不同，`RefCell<T>` 类型代表了其持有数据的唯一所有权
+
+
+
+#### `RefCell<T>` 与 `Box<T>` 的区别
+
+- 借用规则
+  - 在任何给定的时间内，你要么只能拥有一个可变引用，要么只能拥有任意数量的不可变引用
+  - 引用总是有效的
+
+| `Box<T>`                   | `RefCell<T>`           |
+| -------------------------- | ---------------------- |
+| 编译时强制代码遵循借用规则 | 只在运行时检查借用规则 |
+| 否则会出现错误             | 否则会触发 `panic`     |
+
+
+
+#### 借用规则在不同阶段进行检查的比较
+
+| 编译时                 | 运行时                                                 |
+| ---------------------- | ------------------------------------------------------ |
+| 尽早暴露问题           | 问题暴露延后，甚至到生产环境                           |
+| 没有任何运行时开销     | 因借用计数产生些许性能损失                             |
+| 对大多数场景是最佳选择 | 实现某些特定的内存安全场景（不可变环境中修改自身数据） |
+| Rust 的默认行为        |                                                        |
+
+
+
+`RefCell<T>`
+
+- 与 `Rc<T>` 相似，只能用于单线程场景
+
+
+
+选择 `Box<T>`、`Rc<T>`、`RefCell<T>` 的依据
+
+|                  | `Box<T>`                       | `Rc<T>`                  | `RefCell<T>`                   |
+| ---------------- | ------------------------------ | ------------------------ | ------------------------------ |
+| 同一数据的所有者 | 一个                           | 多个                     | 一个                           |
+| 可变性、借用检查 | 可变、不可变借用（编译时检查） | 不可变借用（编译时检查） | 可变、不可变借用（运行时检查） |
+
+> 即便 `RefCell<T>` 本身不可变，但任能修改其中存储的值
+
+
+
+#### 内部可变性：可变的借用一个不可变的值
+
+```rust
+pub trait Messenger {
+    fn send(&self, msg: &str);
+}
+
+pub struct LimitTracker<'a, T: Messenger> {
+    messenger: &'a T,
+    value: usize,
+    max: usize,
+}
+
+impl<'a, T> LimitTracker<'a, T>
+where
+    T: Messenger,
+{
+    pub fn new(messenger: &'a T, max: usize) -> LimitTracker<'a, T> {
+        LimitTracker {
+            messenger,
+            value: 0,
+            max,
+        }
+    }
+    pub fn set_value(&mut self, value: usize) {
+        self.value = value;
+
+        let percentage_of_max = self.value as f64 / self.max as f64;
+
+        if percentage_of_max >= 1.0 {
+            self.messenger.send("Error: You are over your quota!");
+        } else if percentage_of_max >= 0.9 {
+            self.messenger
+                .send("Urgent warning: You've used up over 90% of your quota!");
+        } else if percentage_of_max >= 0.75 {
+            self.messenger
+                .send("Warning: You've used up over 75% of your quota!");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::RefCell;
+    struct MockMessenger {
+        sent_messages: RefCell<Vec<String>>,
+    }
+    impl MockMessenger {
+        fn new() -> MockMessenger {
+            MockMessenger {
+                sent_messages: RefCell::new(vec![]),
+            }
+        }
+    }
+    impl Messenger for MockMessenger {
+        // 需要 '&mut self' 来改变 'sent_messages' 向量, 但是功能定义时这个引用定义时不是可变的
+        // 改为 'RefCell' 内部可变性时 使用 '&self' 就可以操作
+        fn send(&self, message: &str) {
+            // borrow_mut() 返回一个可变引用
+            self.sent_messages.borrow_mut().push(String::from(message));
+        }
+    }
+
+    #[test]
+    fn it_sends_an_over_75_percent_warning_message() {
+        let mock_messenger = MockMessenger::new();
+        let mut limit_tracker = LimitTracker::new(&mock_messenger, 100);
+        limit_tracker.set_value(80);
+        // borrow() 返回一个不可变引用
+        assert_eq!(mock_messenger.sent_messages.borrow().len(), 1);
+    }
+}
+```
+
+
+
+#### 使用 `RefCell<T>` 在运行是记录借用信息
+
+- 两个方法（安全接口）
+  - `borrow` 方法
+    - 返回智能指针 `Ref<T>`，它实现了 `Deref`
+  - `borrow_mut` 方法
+    - 返回智能指针 `RefMut<T>`，它实现了 `Deref`
+- `RefCell<T>` 会记录当前存在多少个活跃的 `Ref<T>` 和 `RefCell<T>` 智能指针：
+  - 每次调用 `borrow` 不可变借用计数加一
+  - 任何一个 `Ref<T>` 的值离开作用域被释放时，不可变借用计数减一
+  - 每次调用 `borrow_mut` 可变借用计数加一
+  - 任何一个 `RefMut<T>` 的值离开作用域被释放时，可变借用计数减一
+- 以此技术来维护借用检查规则
+  - 任何一个给定时间内，只允许拥有多个不可变借用或一个可变借用
+
+
+
+#### `Rc<T>` 和 `RefCell<T>` 结合使用实现拥有多重所有权的可变数据
+
+```rust
+#[derive(Debug)]
+enum List {
+    Cons(Rc<RefCell<i32>>, Rc<List>),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+fn main() {
+    // 多重所有权的可变引用
+    let value = Rc::new(RefCell::new(5));
+    let a = Rc::new(Cons(Rc::clone(&value), Rc::new(Nil)));
+    let b = Cons(Rc::new(RefCell::new(3)), Rc::clone(&a));
+    let c = Cons(Rc::new(RefCell::new(4)), Rc::clone(&a));
+    // Rc智能指针的引用计数 一个不可变引用 值还是 value 内
+    // 通过 RefCell::borrow_mut() 获取可变引用 此时可以修改 value
+    // 结构体 List 的每个元素都拥有对 value 的可变引用 所以值会随着 value 的改变而改变
+    *value.borrow_mut() += 10;
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+}
+
+```
+
+
+
+#### 其它内部可变性的类型
+
+- `Cell<T>` 通过复制来访问数据
+- `Mutex<T>` 通过跨线程情形下的内部可变性模式
