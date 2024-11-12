@@ -63,6 +63,7 @@ export default defineConfig({
                     collapsed: true,
                     items: [
                         {text: 'AI', link: '/study/Tools/AI'},
+                        {text: '文章', link: '/study/Tools/文章'},
                         {text: '常用命令', link: '/study/Tools/常用命令'},
                         {text: '网页工具', link: '/study/Tools/网页工具'},
 

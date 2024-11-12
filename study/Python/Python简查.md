@@ -1,12 +1,26 @@
 # Python 技巧与库
 
+## Python 代码性能分析工具
 
+> [Pyinstrument](https://pyinstrument.readthedocs.io/en/latest/) 是一款强大的 Python 代码性能分析工具，它能帮助你找到代码中耗时最多的部分，从而进行优化，提升程序执行效率。它就像一把探照灯，照亮了代码执行的黑暗角落，让你清晰地看到代码运行的真实情况。
+
+## 音频神器
+
+> **[miniaudio](https://pypi.org/project/miniaudio/)** 从播放到录制，处理音频样样在行。
 
 ## 网络请求
 
-[HTTPX](https://www.python-httpx.org/)
+### [HTTPX](https://www.python-httpx.org/) 
 
+> HTTPX 是 Python 3 的全功能 HTTP 客户端，它提供同步和异步 API，并支持 HTTP/1.1 和 HTTP/2。
 
+### [curl_cffi](https://curl-cffi.readthedocs.io/en/stable/)
+
+> 模拟浏览器的 TLS 签名或 JA3 指纹。
+
+#### 安装
+
+`pip install curl_cffi --upgrade`
 
 ## 简单表格处理
 
