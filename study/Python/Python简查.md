@@ -1,5 +1,103 @@
 # Python 技巧与库
 
+## python-magic 终结文件类型识别
+
+`python-magic`的安装可能会稍微复杂一些，因为它依赖于libmagic库。
+
+在Linux系统上，你可以使用系统包管理器安装：# Debian/Ubuntu
+
+```
+sudo apt-get install libmagic1 python3-magic# Fedora/CentOS/RHELsudo dnf install python3-magic
+```
+
+在macOS上，你可以使用Homebrew安装：brew install libmagic
+
+```
+pip install python-magic
+```
+
+在Windows上，推荐使用预编译的二进制文件安装：pip install python-magic-bin
+
+```python
+m = magic.Magic()  # 不带参数，获取更详细的描述file_info = m.from_file(“document.pdf”)print(file_info)  # 输出： PDF document， version 1.7
+```
+
+
+
+## requests 自带重试
+
+```python
+import logging
+
+import requests
+from requests.adapters import HTTPAdapter
+
+# 开启 urllib3 的日志，以便于查看重试过程
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+urllib3_logger = logging.getLogger('urllib3')
+urllib3_logger.setLevel(logging.DEBUG)
+
+# 使用 session 发送请求
+session = requests.session()
+# 打印 adapters
+print(session.adapters)
+session.mount('https://', HTTPAdapter(max_retries=3))
+session.mount('http://', HTTPAdapter(max_retries=3))
+try:
+    print(session.get('https://www.baidu.com', timeout=0.01).text[:100])
+except Exception as e:
+    print(e)
+    print(type(e))
+```
+
+
+
+## 去除文本中HTML标签
+
+> Bleach 是一个用于清理 HTML 输入的 Python 库，能够帮助开发者避免跨站脚本攻击（XSS）。它通过白名单的方式来许可特定的 HTML 标签和属性，从而有效地清理输入数据，确保 Web 应用的安全性。Bleach 易于使用，可以非常方便地集成到 Web 应用中，是保障 Web 应用安全的有力助手。
+
+`pip install bleach`
+
+```python
+from bleach import clean
+
+# 用户输入的HTML字符串
+user_input = '<p>Hello <b>World</b>!</p><script>alert("XSS");</script>'
+
+# 允许的标签和属性
+allowed_tags = ['a', 'b', 'p', 'em', 'strong']
+allowed_attrs = {'a': ['href', 'title']}
+
+# 使用clean函数清理用户输入
+cleaned_html = clean(user_input, allowed_tags=allowed_tags, allowed_attrs=allowed_attrs)
+
+print(cleaned_html)
+# result --> <p>Hello <b>World</b>!</p>
+```
+
+
+
+## Python subprocess 执行环境
+
+```python
+from subprocess import Popen
+
+
+env = os.environ.copy()
+# 防止Popen中的依赖位置与使用的虚拟环境位置不一致
+env['PYTHONPATH'] = site.getsitepackages()[-1]
+process = Popen(
+	shlex.split(command),
+    cwd=data_path,
+    stdout=log_fp,
+    stderr=log_fp,
+    env=env,
+    text=True
+)
+```
+
+
+
 ## Python 代码性能分析工具
 
 > [Pyinstrument](https://pyinstrument.readthedocs.io/en/latest/) 是一款强大的 Python 代码性能分析工具，它能帮助你找到代码中耗时最多的部分，从而进行优化，提升程序执行效率。它就像一把探照灯，照亮了代码执行的黑暗角落，让你清晰地看到代码运行的真实情况。
