@@ -1,6 +1,10 @@
 import {defineConfig} from 'vitepress'
+import fs from 'fs';
+import path from 'path';
 
 // https://vitepress.dev/reference/site-config
+const aiDir = path.resolve(__dirname, '../ai'); // 确保路径正确
+const aiFiles = fs.readdirSync(aiDir).filter((file) => file.endsWith('.md'));
 export default defineConfig({
     title: "YunDocs",
     base: '/YunDocs/',
@@ -33,6 +37,10 @@ export default defineConfig({
             {
                 text: '记录',
                 link: '/study'
+            },
+            {
+                text: 'AI',
+                link: '/ai'
             }
         ],
 
@@ -134,6 +142,19 @@ export default defineConfig({
                         {text: 'Nginx', link: '/study/Dev/Nginx'},
                     ]
                 },
+            ],
+            '/ai': [
+                {
+                    text: 'AI 笔记',
+                    collapsed: true,
+                    items: aiFiles.map((file) => {
+                        const fileName = file.replace('.md', '');
+                        return {
+                            text: fileName, // 显示的文本
+                            link: `/ai/${fileName}`, // 对应的路径
+                        };
+                    })
+                }
             ]
         },
 
