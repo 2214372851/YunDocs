@@ -5570,3 +5570,329 @@ fn main() {
   - 当 `Strong Reference` 数量为零的时候，`Weak Reference` 会自动断开
 - 在使用 `Weak<T>` 前，需保证它指向的值仍然存在
   - 在 `Weak<T>` 实例上调用 `upgrade` 方法，返回 `Option<Rc<T>>`
+
+
+
+```rust
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+
+#[derive(Debug)]
+struct Node {
+    value: i32,
+    parent: RefCell<Weak<Node>>,
+    children: RefCell<Vec<Rc<Node>>>,
+}
+
+fn main() {
+    let leaf = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf)
+    );
+    {
+        let branch = Rc::new(Node {
+            value: 5,
+            parent: RefCell::new(Weak::new()),
+            // 强引用 leaf，leaf 的父节点为 branch
+            children: RefCell::new(vec![Rc::clone(&leaf)]),
+        });
+        // 弱引用 branch，branch 的父节点为 leaf
+        *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+        println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+        println!(
+            "leaf strong = {}, weak = {}",
+            Rc::strong_count(&leaf),
+            Rc::weak_count(&leaf)
+        );
+        println!(
+            "branch strong = {}, weak = {}",
+            Rc::strong_count(&branch),
+            Rc::weak_count(&branch)
+        );
+    }
+    // 走出作用域 释放 branch 弱引用, leaf 的强引用
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf)
+    );
+}
+```
+
+
+
+## 二十七、无畏并发
+
+
+
+### 并发
+
+- `Concurrent（并发）`：程序的不同部分之间独立的执行
+- `Parallel（并行）`：程序的不同部分同时运行
+- Rust 无畏并发：语序你编写没有细微 Bug 的代码，并在不引入新 Bug 的情况下易于重构
+- 这里的并发泛指 `concurrent` 与 `parallel`
+
+
+
+### 进程与线程
+
+- 大部分 OS 中，代码运行在进程（process）中，OS 同时管理多个进程
+- 在程序中，各独立部分可以同时运行，运行这些独立部分的就是线程（thread）
+- 多线程运行：
+  - 提示性能表现
+  - 增加复杂度：无法保障各线程的执行顺序
+
+
+
+### 多线程可导致的问题
+
+- 竞争状态，线程一不一致的顺序访问数据或资源
+- 死锁，两个线程彼此等待对方使用完所持有的资源，线程就无法继续
+- 只在某些情况下发生的 Bug，很难可靠的复制现象和修复
+
+
+
+### 实现线程的方式
+
+- 通过调用 OS 的 API 来创建线程：1：1模型（一个操作系统的线程：一个程序里的线程）
+  - 需要较小的运行时
+- 语言自己实现的线程（绿色线程）：M：N模型（M个绿色线程：N个系统线程）
+  - 需要更大的运行时
+- Rust：需要权衡运行时的支持
+- Rust 标准库仅提供 1：1 模型的线程
+
+
+
+### 通过 `spawn` 创建新线程
+
+- 通过 `thread::spawn` 函数可以创建新的线程
+  - 参数：一个闭包（在新线程里运行的代码）
+
+```rust
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    thread::spawn(|| {
+        for i in 1..10 {
+            println!("hi number {} from the spawned thread!", i);
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+    for i in 1..5 {
+        println!("hi number {} from the main thread!", i);
+        thread::sleep(Duration::from_secs(1));
+    }
+    // 不论子线程是否结束都会结束
+}
+```
+
+
+
+通过 `join Handle` 来等待所有线程的完成
+
+- `thread::spawn` 函数的返回值是 `JoinHandle`
+- `JoinHandle` 持有值的所有权
+  - 调用其 `join` 方法，可以等待对应的其它线程的完成
+
+```rust
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let handle = thread::spawn(|| {
+        for i in 1..10 {
+            println!("hi number {} from the spawned thread!", i);
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+    for i in 1..5 {
+        println!("hi number {} from the main thread!", i);
+        thread::sleep(Duration::from_secs(1));
+    };
+    handle.join().expect("thread panicked");
+    // handle.join().unwrap();
+}
+```
+
+
+
+### 使用 `move` 闭包
+
+- `move` 闭包通常和 `thread:spawn` 一起使用，它允许你使用其它线程的数据
+- 创建线程时，把值的所有权从一个线程转移到另一个线程
+
+```rust
+use std::thread;
+
+fn main() {
+    let value = vec![1, 2, 3];
+    let handle = thread::spawn(move || {
+        println!("{:?}", value);
+    });
+
+    // 不使用 move 只给值的引用就会导致出现异常，例如：
+    // 此时线程还没结束还保留着对值的引用，但是值已经销毁
+    // drop(value);
+    handle.join().unwrap();
+}
+```
+
+
+
+### 使用消息传递跨线程传递数据
+
+#### 消息传递
+
+- 一种很流行且能保证安全的并发的技术就是：消息传递
+- 线程（或 Actor）通过本次发送消息（数据）来进行通信
+- Go：不要用共享内存来通信，要用通信来共享内存
+- Rust：`Channel`（标准库提供）
+
+
+
+#### Channel
+
+- `Channel` 包含：发送端、接收端
+- 调用发送端的方法，发送数据
+- 接收端会检查和接受到达的数据
+- 如果发送端、接收端中容易一端被丢弃，那么 `Channel` 就  “关闭” 了
+
+
+
+##### 创建 `Channel`
+
+- 使用 `mpsc::channel` 函数来创建 `Channel`
+  - `mpsc` 表示 `multiple producer, single consumer` （多个生产者、一个消费者）
+  - 返回一个 `tuple`（元组）：里面元素分别是发送端、接收端
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+    let handle = thread::spawn(move || {
+        // 必须有通道所有权才能发送消息
+        tx.send("Hello World!").unwrap();
+    });
+    let receiver = rx.recv().unwrap();
+    println!("Received {}", receiver);
+}
+```
+
+
+
+##### 发送端 `send` 方法
+
+- 参数： 想要发送的数据
+
+- 返回：`Result<T, E>`
+  - 如果有问题（例如接收端已经被丢弃），就返回一个错误
+
+
+
+##### 接收端的方法
+
+- recv 方法：阻塞当前线程执行，直到 `Channel` 中有值被送来
+  - 一旦有值收到，就会返回 `Result<T, E>`
+  - 当发送端关闭，就会收到一个错误
+- `try_recv` 方法：不会阻塞
+  - 立即返回 `Result<T, E>`
+    - 有数据到搭配返回 OK，里面包含着数据
+    - 否则，返回错误
+  - 通常会使用循环来检查 `try_recv` 的结果
+
+
+
+##### `Channel` 和所有权转移
+
+- 所有权在消息传递中非常重要：能帮你编写安全、并发的代码
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+    let handle = thread::spawn(move || {
+        // 必须有通道所有权才能发送消息
+        let val = String::from("Hi Rust");
+        tx.send(val).unwrap();
+        // val 所有权被移动到通道
+        println!("Send: {}", val)
+    });
+    let receiver = rx.recv().unwrap();
+    println!("Received {}", receiver);
+}
+```
+
+
+
+- 发送多个值，看到接收者在等待
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+    let handle = thread::spawn(move || {
+        for i in 1..=5 {
+            println!("Sending {}", i);
+            tx.send(i).unwrap();
+            thread::sleep(std::time::Duration::from_secs(1));
+        }
+    });
+    // 当把 rx 当作迭代器时，它将阻塞（不用调用recv），直到有新的消息到达。
+    for received in rx {
+        println!("Got: {}", received);
+    }
+    handle.join().unwrap();
+}
+```
+
+
+
+- 通过克隆来创建多个发送者
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    let tx1 = tx.clone();
+    let tx2 = mpsc::Sender::clone(&tx);
+    thread::spawn(move || {
+        for i in 1..=5 {
+            let msg = format!("Message from thread 1: {}", i);
+            tx1.send(msg).unwrap();
+        }
+    });
+
+    thread::spawn(move || {
+        for i in 6..=10 {
+            let msg = format!("Message from thread 2: {}", i);
+            tx2.send(msg).unwrap();
+        }
+    });
+    thread::spawn(move || {
+        tx.send("Final message".to_string())
+    });
+
+    for msg in rx {
+        println!("{}", msg);
+    }
+}
+```
+
