@@ -1,14 +1,27 @@
 import {defineConfig} from 'vitepress'
+import {RSSOptions, RssPlugin} from "vitepress-plugin-rss";
 import fs from 'fs';
 import path from 'path';
 
 // https://vitepress.dev/reference/site-config
+const baseUrl = 'https://2214372851.github.io/YunDocs';
+const RSS: RSSOptions = {
+    title: 'YunDocs',
+    description: 'YunDocs | Documented study notes have been developed for module documentation',
+    site_url: baseUrl,
+    copyright: 'Copyright © 2023-present Yun'
+}
 const aiDir = path.resolve(__dirname, '../ai'); // 确保路径正确
 const aiFiles = fs.readdirSync(aiDir).filter((file) => file.endsWith('.md'));
 export default defineConfig({
     title: "YunDocs",
     base: '/YunDocs/',
     description: "YunDocs | Documented study notes have been developed for module documentation",
+    vite: {
+        plugins: [
+            RssPlugin(RSS)
+        ]
+    },
     head: [
         ['link', {rel: 'icon', type: 'image/svg+xml', href: '/YunDocs/logo.jpg'}],
         ['link', {rel: 'icon', type: 'image/png', href: '/YunDocs/logo.jpg'}],
