@@ -32,6 +32,6 @@ features:
     details: "基于 Django + Vue 实现的通用分布式爬虫管理平台，目前暂未公开。"
   - icon: 🥺
     title: D0 Tools
-    details: "基于 PySide6 构建的数据标注工具，预留插件接口简易集成。"
+    details: "基于 PySide6 构建的数据标注工具，原生带有2D图像标注插件，预留插件接口简易集成。"
 ---
 

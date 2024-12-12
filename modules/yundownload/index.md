@@ -1,10 +1,14 @@
 ---
 next:
-  text: '快速开始(V2)'
-  link: '/modules/yundownload/v2-quickstart'
+  text: '快速开始'
+  link: '/modules/yundownload/quickstart'
 ---
 
 # Yun download
+
+::: tip
+当前站点只保留最新文档，完整站点请看 [Yundownload](https://2214372851.github.io/yundownload/)
+:::
 
 ------
 

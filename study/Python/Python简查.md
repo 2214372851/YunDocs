@@ -1,202 +1,419 @@
 # Python 技巧与库
 
+## 绕过 cloudflare 人机验证
+
+> Cloudflare 的人机验证（通常指的是 CAPTCHA 或 JavaScript挑战）是为了帮助网站或服务区分真实用户和恶意机器人（例如爬虫、攻击者等）而设计的一种安全措施。Cloudflare
+> 作为一个提供CDN和网络安全服务的公司，提供多种保护机制来防止DDoS攻击、恶意流量、滥用等。人机验证是其中的一部分。
+
+::: tip
+由于 cloudflare 会验证 TLS 连接所以建议使用 `curl_cffi`
+模块来弥补 Python 底层 openSSL 模块的底层 TLS 连接被识别的问题。
+:::
+
+### 本次使用的技术
+
+- `curl_cffi`
+- `DrissionPage`
+
+### 示例代码
+
+```python{32-36,43-79,109-112}
+co = ChromiumOptions().set_browser_path('google-chrome')
+co.new_env()
+#co.headless() # 部分 cloudflare 无头模式无法绕过 // [!code error]
+#co.set_proxy('http://192.168.7.16:7890') # 配置代理，不能忘记curl_cffi也需要代理 // [!code warning]
+arguments = [
+    "-no-first-run",
+    "-force-color-profile=srgb",
+    "-metrics-recording-only",
+    "-password-store=basic",
+    "-use-mock-keychain",
+    "-export-tagged-pdf",
+    "-no-default-browser-check",
+    "-disable-background-mode",
+    "-enable-features=NetworkService,NetworkServiceInProcess,LoadCryptoTokenExtension,PermuteTLSExtensions",
+    "-disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
+    "-deny-permission-prompts",
+    "-disable-gpu",
+    "-accept-lang=zh-CN", 根据网站选择支持的地区 // [!code warning]
+    "--guest"
+]
+for arg in arguments:
+    co.set_argument(arg)
+co.incognito()
+co.set_argument("--no-sandbox") # Linux中不设置无法使用 // [!code error]
+logger.info("打开浏览器")
+browser = Chromium(co)
+logger.info("打开浏览器成功")
+tab.set.user_agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36') # 需要关注不同系统的UA不同 // [!code error]
+tab.set.window.max() # 实测可有可无
+tab.listen.start("worldwide.espacenet.com")
+tab.get("https://worldwide.espacenet.com/")
+headers = None # 采用监听的方式获取真实headers
+for packet in tab.listen.steps():
+    headers = packet.request.headers
+    logger.info(f"GET: headers --> {headers}")
+    break
+time.sleep(3)
+while True:
+    tab.wait(1)
+    try:
+        if tab.ele('请完成以下操作'):
+            logger.info('不需要点击')
+            # 模拟人为点击，等操作，根据自己的语言来调整对应的关键词和页面元素结构
+            iframe = tab.ele(".main-content")
+            iframe = (
+                iframe.ele("#rvwE0", timeout=3)
+                .ele("@tag()=div")
+                .ele("@tag()=div")
+                .shadow_root.get_frame("t:iframe")
+            )
+            iframe_input = iframe.ele("t:body").sr.ele(".cb-lb").ele("t:input")
+            if '验证您是真人' in tab.html:
+                tab.get_screenshot(path='tmp', name='in.jpg', full_page=True)
+                iframe.actions.scroll(
+                        delta_y=-100
+                ).move(
+                        123, 254, 1
+                ).move_to(
+                        ele_or_loc=iframe_input,
+                        offset_x=random.randint(-100, 125),
+                        offset_y=random.randint(-98, 140),
+                        duration=5
+                ).wait(0.1, 0.5).move_to(
+                    ele_or_loc=iframe_input,
+                    offset_x=random.randint(-5, 5),
+                    offset_y=random.randint(-5, 5),
+                    duration=2,
+                ).wait(0.2, 0.5).click().wait(1, 3)
+            with open('tmp/index.html', 'w', encoding='utf-8') as f:
+                f.write(tab.html)
+            if '验证您是真人' in tab.html:
+                logger.info('让我证明我是人')
+                tab.get_screenshot(path='tmp', name='in.jpg', full_page=True)
+                iframe_input.click()
+            if '需要几秒' in tab.html:
+                logger.info('他说需要几秒钟')
+                tab.get_screenshot(path='tmp', name='in.jpg', full_page=True)
+                tab.wait(6)
+                tab.get_screenshot(path='tmp', name='in.jpg', full_page=True)
+        #logger.info(f"点击 iframe 成功")
+        #tab.wait(2)
+    except Exception as e:
+        logger.error(f"未通过, 重试 {e}", exc_info=True)
+    cookies = tab.cookies().as_dict()
+    rep = requests.get(
+        "https://worldwide.espacenet.com",
+        cookies=cookies,
+        headers=headers,
+    )
+    logger.warning(rep.status_code)
+    if rep.status_code != 403:
+        logger.info("next cookies")
+        break
+    else:
+        if not tab.wait.ele_deleted("#splashScreenContainer", timeout=5):
+            tab.refresh(True)
+            logger.info("website loading refresh")
+        logger.info(f"未通过, 重试")
+    tab.get_screenshot(path='tmp', name='pic.jpg', full_page=True)
+tab.wait(8)
+logger.info(f"获取到的headers: {headers}")
+tab.wait(5)
+cookies = tab.cookies().as_dict()
+logger.info(cookies)
+logger.info(f"refresh_cookie 成功")
+if not ("cf_clearance" in cookies and len(cookies["cf_clearance"]) > 100):
+    logger.error(f"Cookie refresh failed: {cookies}")
+    exit(1)
+    
+# 使用相同IP、Cookies 和 Headers 请求即可正常获取数据
+self.cookies = cookies
+self.headers["user-agent"] = headers["user-agent"]
+browser.quit()
+```
+
+### 注意点
+
+- Cookies 不是永久有效的，你需要按照自己的情况来刷新
+- User-Agent 需要根据系统来调整，例如 Mac、Linux 与 Windows 都是不同的
+- Cloudflare 识别 TLS 连接，需要使用 `curl_cffi` 模块来绕过
+- 配合代理来使用最佳，但是浏览器不支持需要账号密码的代理，所以需要使用白名单功能的代理服务
+
+### Docker 部署方案
+
+> 实践时编写了支持的 [Dockerfile](https://github.com/2214372851/python-headless-browser)
+
+#### 使用方法如下
+
+1. 拉取仓库 `git clone https://github.com/2214372851/python-headless-browser.git`
+2. 构建基础镜像 `docker build -t headless-browser .`
+3. 修改自己的项目的 Dockerfile 例如：
+
+```dockerfile
+FROM python-headless-browser:latest
+
+RUN mkdir /code && mkdir /data
+
+VOLUME /data
+
+
+COPY . /code
+
+RUN pip install -r /code/requirements.txt
+
+WORKDIR /code
+
+# 无头模式使用如下，部分网站使用无头模式无法绕过
+CMD ["python", "main.py"] // [!code --]
+
+# 非无头模式使用如下
+CMD xvfb-run -a python main.py // [!code ++]
+```
+
+4. 构建镜像 `docker build -t my-project .`
+5. 运行镜像 `docker run -d -v /data:/data my-project`
+
 ## `ThreadPool` 和 `ThreadPoolExecutor` 的区别
 
-`ThreadPool` 和 `ThreadPoolExecutor` 都是用于管理线程池的工具，目的是通过重用线程来避免频繁创建和销毁线程的开销，从而提高多线程程序的性能。`ThreadPool` 是较旧的线程池实现，而 `ThreadPoolExecutor` 是 Python 3 中提供的一个更现代的、功能更强大的线程池实现。以下是它们的主要区别：
+`ThreadPool` 和 `ThreadPoolExecutor` 都是用于管理线程池的工具，目的是通过重用线程来避免频繁创建和销毁线程的开销，从而提高多线程程序的性能。
+`ThreadPool` 是较旧的线程池实现，而 `ThreadPoolExecutor` 是 Python 3 中提供的一个更现代的、功能更强大的线程池实现。以下是它们的主要区别：
 
 ### 1. **模块和类**
+
 - **`ThreadPool`**：
-  - `ThreadPool` 是 Python 标准库 `multiprocessing.pool` 模块中的一个类，早期版本中用于创建和管理线程池，适用于多线程环境中需要池化线程的场景。
-  - 该类已经被弃用，在 Python 3 中不推荐使用。
+    - `ThreadPool` 是 Python 标准库 `multiprocessing.pool` 模块中的一个类，早期版本中用于创建和管理线程池，适用于多线程环境中需要池化线程的场景。
+    - 该类已经被弃用，在 Python 3 中不推荐使用。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 是 Python 3 中 `concurrent.futures` 模块中提供的一个类，它是基于 `Executor` 类实现的，提供了更现代、更强大、灵活的接口来管理线程池。
-  - `ThreadPoolExecutor` 是推荐使用的线程池实现，具有更一致的 API，并且更符合现代 Python 并发编程的设计思想。
+    - `ThreadPoolExecutor` 是 Python 3 中 `concurrent.futures` 模块中提供的一个类，它是基于 `Executor`
+      类实现的，提供了更现代、更强大、灵活的接口来管理线程池。
+    - `ThreadPoolExecutor` 是推荐使用的线程池实现，具有更一致的 API，并且更符合现代 Python 并发编程的设计思想。
 
 ### 2. **API和接口设计**
+
 - **`ThreadPool`**：
-  - `ThreadPool` 的接口相对较基础，主要通过 `apply()`、`map()`、`apply_async()` 等方法来提交和处理任务。它更侧重于池化线程的创建和管理，而没有统一的异步任务管理接口。
-  - `ThreadPool` 提供了 `apply()`（阻塞）和 `apply_async()`（异步）来提交任务，还支持 `map()` 用于并行处理可迭代对象中的任务。
+    - `ThreadPool` 的接口相对较基础，主要通过 `apply()`、`map()`、`apply_async()`
+      等方法来提交和处理任务。它更侧重于池化线程的创建和管理，而没有统一的异步任务管理接口。
+    - `ThreadPool` 提供了 `apply()`（阻塞）和 `apply_async()`（异步）来提交任务，还支持 `map()` 用于并行处理可迭代对象中的任务。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 提供了更简洁、更一致的接口，它继承自 `Executor` 类，提供了 `submit()`、`map()` 和 `shutdown()` 方法来管理线程池中的任务。
-  - `submit()` 用于异步提交任务，返回一个 `Future` 对象，用户可以通过 `Future.result()` 来获取结果。`map()` 方法类似于 `Pool.map()`，但返回的是一个迭代器，可以按需获取结果。
-  - 提供了 `shutdown()` 方法来优雅地关闭线程池，等待所有线程执行完成。
+    - `ThreadPoolExecutor` 提供了更简洁、更一致的接口，它继承自 `Executor` 类，提供了 `submit()`、`map()` 和 `shutdown()`
+      方法来管理线程池中的任务。
+    - `submit()` 用于异步提交任务，返回一个 `Future` 对象，用户可以通过 `Future.result()` 来获取结果。`map()` 方法类似于
+      `Pool.map()`，但返回的是一个迭代器，可以按需获取结果。
+    - 提供了 `shutdown()` 方法来优雅地关闭线程池，等待所有线程执行完成。
 
 ### 3. **任务提交和回调**
+
 - **`ThreadPool`**：
-  - 任务提交通过 `apply_async()` 完成，用户可以传递回调函数来处理任务完成后的结果，但 API 相对较底层，使用起来不如 `ThreadPoolExecutor` 灵活。
-  - 不像 `ThreadPoolExecutor` 那样提供 `Future` 对象来追踪任务执行的状态和结果，处理异步任务时需要手动管理和获取返回结果。
+    - 任务提交通过 `apply_async()` 完成，用户可以传递回调函数来处理任务完成后的结果，但 API 相对较底层，使用起来不如
+      `ThreadPoolExecutor` 灵活。
+    - 不像 `ThreadPoolExecutor` 那样提供 `Future` 对象来追踪任务执行的状态和结果，处理异步任务时需要手动管理和获取返回结果。
 
 - **`ThreadPoolExecutor`**：
-  - 通过 `submit()` 方法提交任务，返回一个 `Future` 对象，`Future` 对象可以用来跟踪任务的执行状态、获取结果，并支持设置回调函数。
-  - `ThreadPoolExecutor` 的 `Future` 对象允许更灵活的结果管理，可以通过 `result()` 获取任务结果，也可以通过 `add_done_callback()` 设置任务完成时的回调函数。
+    - 通过 `submit()` 方法提交任务，返回一个 `Future` 对象，`Future` 对象可以用来跟踪任务的执行状态、获取结果，并支持设置回调函数。
+    - `ThreadPoolExecutor` 的 `Future` 对象允许更灵活的结果管理，可以通过 `result()` 获取任务结果，也可以通过
+      `add_done_callback()` 设置任务完成时的回调函数。
 
 ### 4. **进程池与线程池**
+
 - **`ThreadPool`**：
-  - `ThreadPool` 仅支持线程池，适用于那些需要并发处理的轻量任务，如 I/O 密集型任务。
-  - 由于它在 `multiprocessing.pool` 模块中，它的设计更多的是为了和 `ProcessPool` 进行对比，且较为简洁、适用于小规模任务。
+    - `ThreadPool` 仅支持线程池，适用于那些需要并发处理的轻量任务，如 I/O 密集型任务。
+    - 由于它在 `multiprocessing.pool` 模块中，它的设计更多的是为了和 `ProcessPool` 进行对比，且较为简洁、适用于小规模任务。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 同样是用于线程池的管理，它设计得更为灵活，支持高并发、异步编程，适用于需要线程池的现代应用程序。
-  - 它可以与 `ProcessPoolExecutor` 配合使用，`ThreadPoolExecutor` 可以管理线程池，而 `ProcessPoolExecutor` 管理进程池，适应不同的并发需求。
+    - `ThreadPoolExecutor` 同样是用于线程池的管理，它设计得更为灵活，支持高并发、异步编程，适用于需要线程池的现代应用程序。
+    - 它可以与 `ProcessPoolExecutor` 配合使用，`ThreadPoolExecutor` 可以管理线程池，而 `ProcessPoolExecutor`
+      管理进程池，适应不同的并发需求。
 
 ### 5. **管理和关闭**
+
 - **`ThreadPool`**：
-  - `ThreadPool` 提供了一个 `close()` 和 `join()` 方法来管理线程池的关闭，要求开发者显式地关闭池。
+    - `ThreadPool` 提供了一个 `close()` 和 `join()` 方法来管理线程池的关闭，要求开发者显式地关闭池。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 提供了 `shutdown()` 方法来优雅地关闭线程池，并等待线程池中所有线程执行完成。通过 `shutdown(wait=True)` 可以阻塞直到所有线程完成任务，`shutdown(wait=False)` 会立即返回，不等待任务完成。
+    - `ThreadPoolExecutor` 提供了 `shutdown()` 方法来优雅地关闭线程池，并等待线程池中所有线程执行完成。通过
+      `shutdown(wait=True)` 可以阻塞直到所有线程完成任务，`shutdown(wait=False)` 会立即返回，不等待任务完成。
 
 ### 6. **异常处理**
+
 - **`ThreadPool`**：
-  - 异常处理相对较为简单，在 `apply_async()` 的回调函数中捕获异常，或者直接使用 `apply()` 方法阻塞并捕获异常。
+    - 异常处理相对较为简单，在 `apply_async()` 的回调函数中捕获异常，或者直接使用 `apply()` 方法阻塞并捕获异常。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 提供了更灵活的异常处理机制。`submit()` 返回的 `Future` 对象会在任务执行时抛出异常，用户可以通过 `Future.exception()` 或 `Future.result()` 捕获并处理任务中的异常。
+    - `ThreadPoolExecutor` 提供了更灵活的异常处理机制。`submit()` 返回的 `Future` 对象会在任务执行时抛出异常，用户可以通过
+      `Future.exception()` 或 `Future.result()` 捕获并处理任务中的异常。
 
 ### 7. **适用场景**
+
 - **`ThreadPool`**：
-  - `ThreadPool` 适用于需要简单线程池的任务场景，主要用于 I/O 密集型操作（如文件处理、网络请求等），因为线程池中的每个线程一般都处于阻塞状态，CPU 占用较低。
+    - `ThreadPool` 适用于需要简单线程池的任务场景，主要用于 I/O 密集型操作（如文件处理、网络请求等），因为线程池中的每个线程一般都处于阻塞状态，CPU
+      占用较低。
 
 - **`ThreadPoolExecutor`**：
-  - `ThreadPoolExecutor` 适用于需要更高并发、更多控制、灵活的线程池管理的场景。它的 API 更加简洁现代，支持异步任务管理、回调、异常处理等，适合于现代并发编程中的复杂任务。
+    - `ThreadPoolExecutor` 适用于需要更高并发、更多控制、灵活的线程池管理的场景。它的 API
+      更加简洁现代，支持异步任务管理、回调、异常处理等，适合于现代并发编程中的复杂任务。
 
 ### 总结表格：
 
-| 特性               | `ThreadPool`                        | `ThreadPoolExecutor`                                    |
-| ------------------ | ----------------------------------- | ------------------------------------------------------- |
-| **模块**           | `multiprocessing.pool`              | `concurrent.futures`                                    |
-| **类名**           | `ThreadPool`                        | `ThreadPoolExecutor`                                    |
-| **创建线程池**     | `ThreadPool()`                      | `ThreadPoolExecutor()`                                  |
-| **任务提交**       | `apply()`, `map()`, `apply_async()` | `submit()`, `map()`                                     |
-| **异步任务管理**   | `apply_async()` 支持异步任务        | `submit()` 返回 `Future` 对象                           |
-| **异常处理**       | 通过回调函数捕获异常                | 通过 `Future.result()` 或 `Future.exception()` 捕获异常 |
-| **回调支持**       | 支持回调函数，但较为复杂            | 支持通过 `Future.add_done_callback()` 设置回调          |
-| **优雅关闭线程池** | `close()` 和 `join()`               | `shutdown()`                                            |
-| **适用场景**       | 简单的线程池，I/O 密集型任务        | 更高并发和控制，适用于现代并发编程任务                  |
+| 特性          | `ThreadPool`                        | `ThreadPoolExecutor`                             |
+|-------------|-------------------------------------|--------------------------------------------------|
+| **模块**      | `multiprocessing.pool`              | `concurrent.futures`                             |
+| **类名**      | `ThreadPool`                        | `ThreadPoolExecutor`                             |
+| **创建线程池**   | `ThreadPool()`                      | `ThreadPoolExecutor()`                           |
+| **任务提交**    | `apply()`, `map()`, `apply_async()` | `submit()`, `map()`                              |
+| **异步任务管理**  | `apply_async()` 支持异步任务              | `submit()` 返回 `Future` 对象                        |
+| **异常处理**    | 通过回调函数捕获异常                          | 通过 `Future.result()` 或 `Future.exception()` 捕获异常 |
+| **回调支持**    | 支持回调函数，但较为复杂                        | 支持通过 `Future.add_done_callback()` 设置回调           |
+| **优雅关闭线程池** | `close()` 和 `join()`                | `shutdown()`                                     |
+| **适用场景**    | 简单的线程池，I/O 密集型任务                    | 更高并发和控制，适用于现代并发编程任务                              |
 
 ### 总结：
+
 - **`ThreadPool`** 是较旧的线程池实现，功能相对较简单，适用于轻量的并行任务，尤其是 I/O 密集型任务。
 - **`ThreadPoolExecutor`** 是现代 Python 线程池的推荐实现，它提供了更丰富的功能、更灵活的接口、异步支持和更强的错误处理机制，适合需要高并发、复杂任务调度的场景。
 
 ## `Pool` 和 `ProcessPoolExecutor` 的区别
 
-`Pool` 和 `ProcessPoolExecutor` 都是 Python `multiprocessing` 模块中用于并行计算的工具，它们都允许在多核 CPU 上并行执行多个任务，但它们有一些关键的区别。以下是它们之间的主要区别：
+`Pool` 和 `ProcessPoolExecutor` 都是 Python `multiprocessing` 模块中用于并行计算的工具，它们都允许在多核 CPU
+上并行执行多个任务，但它们有一些关键的区别。以下是它们之间的主要区别：
 
 ### 1. **基本概念和接口**
+
 - **`Pool`**：
-  - `Pool` 是 `multiprocessing` 模块中的一个类，用于创建一个进程池，能够管理多个子进程的创建、任务分配和结果收集。
-  - `Pool` 提供了多个方法来异步或同步地分配任务，例如 `apply()`、`map()`、`apply_async()`、`map_async()` 等。
+    - `Pool` 是 `multiprocessing` 模块中的一个类，用于创建一个进程池，能够管理多个子进程的创建、任务分配和结果收集。
+    - `Pool` 提供了多个方法来异步或同步地分配任务，例如 `apply()`、`map()`、`apply_async()`、`map_async()` 等。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 是 `concurrent.futures` 模块中的一个类，提供了一个基于线程池的接口来并行执行任务。它的主要设计目标是简化并行编程，提供更高级的接口。
-  - `ProcessPoolExecutor` 提供了 `submit()` 和 `map()` 方法来异步和同步执行任务。
+    - `ProcessPoolExecutor` 是 `concurrent.futures` 模块中的一个类，提供了一个基于线程池的接口来并行执行任务。它的主要设计目标是简化并行编程，提供更高级的接口。
+    - `ProcessPoolExecutor` 提供了 `submit()` 和 `map()` 方法来异步和同步执行任务。
 
 ### 2. **API设计**
+
 - **`Pool`**：
-  - `Pool` 的 API 相对更低级，要求用户直接管理进程池中的任务，手动分配任务和收集结果。
-  - 例如，使用 `Pool.map()` 可以并行处理一个迭代器中的每个任务，`apply_async()` 用于异步执行函数。
+    - `Pool` 的 API 相对更低级，要求用户直接管理进程池中的任务，手动分配任务和收集结果。
+    - 例如，使用 `Pool.map()` 可以并行处理一个迭代器中的每个任务，`apply_async()` 用于异步执行函数。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 提供了更现代化的 API，基于 `concurrent.futures` 模块的设计，符合 `ThreadPoolExecutor` 和 `Executor` 的接口设计，支持 `submit()` 和 `map()` 方法，具有更简洁和一致的接口。
-  - 使用 `submit()` 可以异步提交任务，返回一个 `Future` 对象，用户可以通过 `Future.result()` 来获取结果。
+    - `ProcessPoolExecutor` 提供了更现代化的 API，基于 `concurrent.futures` 模块的设计，符合 `ThreadPoolExecutor` 和
+      `Executor` 的接口设计，支持 `submit()` 和 `map()` 方法，具有更简洁和一致的接口。
+    - 使用 `submit()` 可以异步提交任务，返回一个 `Future` 对象，用户可以通过 `Future.result()` 来获取结果。
 
 ### 3. **使用方便性**
+
 - **`Pool`**：
-  - `Pool` 的接口相对较基础，需要开发者手动管理进程池中的任务，并且在任务执行完成后需要显式地处理返回结果。
-  - 适用于需要处理批量任务的场景，比如批量处理文件或数据集。
+    - `Pool` 的接口相对较基础，需要开发者手动管理进程池中的任务，并且在任务执行完成后需要显式地处理返回结果。
+    - 适用于需要处理批量任务的场景，比如批量处理文件或数据集。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 提供了更方便的 API，支持 `submit()` 来提交单个任务，并且通过 `Future` 对象可以方便地获取异步任务的结果。
-  - 适用于具有更多异步需求的场景，代码更加简洁、易于理解。
+    - `ProcessPoolExecutor` 提供了更方便的 API，支持 `submit()` 来提交单个任务，并且通过 `Future` 对象可以方便地获取异步任务的结果。
+    - 适用于具有更多异步需求的场景，代码更加简洁、易于理解。
 
 ### 4. **任务提交和回调机制**
+
 - **`Pool`**：
-  - 在 `Pool` 中，任务提交是通过 `map()` 或 `apply()` 等方法来完成的，这些方法通常是阻塞的，或者返回一个迭代器来等待任务完成。
-  - 可以通过 `apply_async()` 和 `map_async()` 实现异步任务处理，但这些方法的结果处理是通过回调函数来完成的，相对较低级。
+    - 在 `Pool` 中，任务提交是通过 `map()` 或 `apply()` 等方法来完成的，这些方法通常是阻塞的，或者返回一个迭代器来等待任务完成。
+    - 可以通过 `apply_async()` 和 `map_async()` 实现异步任务处理，但这些方法的结果处理是通过回调函数来完成的，相对较低级。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 提供了更高级的任务提交和结果获取方式。`submit()` 方法允许异步提交任务并返回一个 `Future` 对象，`Future` 对象可以用来获取任务结果并设置回调。
-  - `map()` 方法同样支持批量任务，但它的使用方式和 `Pool.map()` 类似，更易于理解和使用。
+    - `ProcessPoolExecutor` 提供了更高级的任务提交和结果获取方式。`submit()` 方法允许异步提交任务并返回一个 `Future` 对象，
+      `Future` 对象可以用来获取任务结果并设置回调。
+    - `map()` 方法同样支持批量任务，但它的使用方式和 `Pool.map()` 类似，更易于理解和使用。
 
 ### 5. **异步处理的灵活性**
+
 - **`Pool`**：
-  - 在 `Pool` 中异步执行任务时，通常会使用 `apply_async()` 或 `map_async()` 方法，并通过 `get()` 方法获取结果，这样的接口稍显繁琐。
-  - `apply_async()` 支持传入回调函数来处理结果。
+    - 在 `Pool` 中异步执行任务时，通常会使用 `apply_async()` 或 `map_async()` 方法，并通过 `get()` 方法获取结果，这样的接口稍显繁琐。
+    - `apply_async()` 支持传入回调函数来处理结果。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 提供了更加灵活的异步处理方式。通过 `submit()` 提交任务后，返回的 `Future` 对象可以通过 `add_done_callback()` 设置回调函数，这为任务完成后的处理提供了更多的灵活性。
+    - `ProcessPoolExecutor` 提供了更加灵活的异步处理方式。通过 `submit()` 提交任务后，返回的 `Future` 对象可以通过
+      `add_done_callback()` 设置回调函数，这为任务完成后的处理提供了更多的灵活性。
 
 ### 6. **异常处理**
+
 - **`Pool`**：
-  - `Pool` 中的任务异常通常需要通过 `apply_async()` 或 `map_async()` 的返回结果来捕获。如果任务执行时出现异常，需要通过 `get()` 方法手动检查异常。
-  
+    - `Pool` 中的任务异常通常需要通过 `apply_async()` 或 `map_async()` 的返回结果来捕获。如果任务执行时出现异常，需要通过
+      `get()` 方法手动检查异常。
+
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 在处理异步任务时，异常处理更加一致。如果 `submit()` 提交的任务在执行过程中抛出异常，可以通过 `Future.result()` 或 `Future.exception()` 捕获异常。这使得异常处理更简洁，且能够直接捕获任务执行时的异常。
+    - `ProcessPoolExecutor` 在处理异步任务时，异常处理更加一致。如果 `submit()` 提交的任务在执行过程中抛出异常，可以通过
+      `Future.result()` 或 `Future.exception()` 捕获异常。这使得异常处理更简洁，且能够直接捕获任务执行时的异常。
 
 ### 7. **性能**
+
 - **`Pool` 和 `ProcessPoolExecutor`**：
-  - 从性能上来看，`Pool` 和 `ProcessPoolExecutor` 都是基于进程池来管理多进程执行，理论上它们的性能是相似的。两者都使用多进程来执行任务，避免了全局解释器锁（GIL）的问题。
-  - 性能差异可能更多体现在具体的应用场景中，例如 `ProcessPoolExecutor` 的 API 会稍微多一些包装，这可能导致在大量任务时有一些微小的性能差异，但差异通常不明显。
+    - 从性能上来看，`Pool` 和 `ProcessPoolExecutor` 都是基于进程池来管理多进程执行，理论上它们的性能是相似的。两者都使用多进程来执行任务，避免了全局解释器锁（GIL）的问题。
+    - 性能差异可能更多体现在具体的应用场景中，例如 `ProcessPoolExecutor` 的 API 会稍微多一些包装，这可能导致在大量任务时有一些微小的性能差异，但差异通常不明显。
 
 ### 8. **适用场景**
+
 - **`Pool`**：
-  - `Pool` 更适合于需要批量处理的任务，特别是那些批量计算、数据处理的场景。比如需要处理一组独立的数据，或者批量读取文件、处理图像等任务。
+    - `Pool` 更适合于需要批量处理的任务，特别是那些批量计算、数据处理的场景。比如需要处理一组独立的数据，或者批量读取文件、处理图像等任务。
 
 - **`ProcessPoolExecutor`**：
-  - `ProcessPoolExecutor` 更适合于异步任务或混合任务的场景，尤其是在任务执行较短并且需要快速响应的情况下。它的 `submit()` 和 `Future` 提供了更灵活的控制方式，适合用于任务分布广泛并且需要更多并行控制的应用场景。
+    - `ProcessPoolExecutor` 更适合于异步任务或混合任务的场景，尤其是在任务执行较短并且需要快速响应的情况下。它的
+      `submit()` 和 `Future` 提供了更灵活的控制方式，适合用于任务分布广泛并且需要更多并行控制的应用场景。
 
 ### 总结表格：
 
-| 特性               | `Pool`                                  | `ProcessPoolExecutor`                            |
-| ------------------ | --------------------------------------- | ------------------------------------------------ |
-| **模块**           | `multiprocessing`                       | `concurrent.futures`                             |
-| **创建进程的方式** | `Pool` 创建进程池                       | `ProcessPoolExecutor` 创建进程池                 |
-| **提交任务**       | `apply()`，`map()`，`apply_async()`     | `submit()`，`map()`                              |
-| **任务返回**       | 通过 `get()` 获取结果                   | 通过 `Future.result()` 获取结果                  |
-| **异步处理**       | `apply_async()`，`map_async()` 支持异步 | `submit()` 返回 `Future` 对象支持异步            |
-| **异常处理**       | 需要手动检查，`get()` 方法抛出异常      | 通过 `Future.exception()` 或 `result()` 捕获异常 |
-| **回调支持**       | 支持回调函数，但相对较复杂              | 通过 `Future.add_done_callback()` 设置回调       |
-| **适用场景**       | 批量任务处理，如数据处理、文件处理等    | 异步任务或混合任务，更灵活的控制                 |
+| 特性          | `Pool`                             | `ProcessPoolExecutor`                     |
+|-------------|------------------------------------|-------------------------------------------|
+| **模块**      | `multiprocessing`                  | `concurrent.futures`                      |
+| **创建进程的方式** | `Pool` 创建进程池                       | `ProcessPoolExecutor` 创建进程池               |
+| **提交任务**    | `apply()`，`map()`，`apply_async()`  | `submit()`，`map()`                        |
+| **任务返回**    | 通过 `get()` 获取结果                    | 通过 `Future.result()` 获取结果                 |
+| **异步处理**    | `apply_async()`，`map_async()` 支持异步 | `submit()` 返回 `Future` 对象支持异步             |
+| **异常处理**    | 需要手动检查，`get()` 方法抛出异常              | 通过 `Future.exception()` 或 `result()` 捕获异常 |
+| **回调支持**    | 支持回调函数，但相对较复杂                      | 通过 `Future.add_done_callback()` 设置回调      |
+| **适用场景**    | 批量任务处理，如数据处理、文件处理等                 | 异步任务或混合任务，更灵活的控制                          |
 
 ### 总结：
+
 - **`Pool`** 适用于简单的批量任务处理和数据并行化，它的接口相对基础，适合直接使用 `map()` 和 `apply()` 来处理任务。
 - **`ProcessPoolExecutor`** 提供了更现代化、更简洁的接口，适合需要异步处理任务、捕获异常并动态调整进程执行的场景。
 
-选择使用 `Pool` 还是 `ProcessPoolExecutor` 主要取决于你的需求，`ProcessPoolExecutor` 更适合于需要更多灵活性和控制的异步任务，而 `Pool` 适合于简单的并行计算任务。
+选择使用 `Pool` 还是 `ProcessPoolExecutor` 主要取决于你的需求，`ProcessPoolExecutor` 更适合于需要更多灵活性和控制的异步任务，而
+`Pool` 适合于简单的并行计算任务。
 
 ## Python `multiprocessing` 模块中的 `Manager` 和 `Pool` 函数
 
-在 Python 的 `multiprocessing` 模块中，`Manager` 和 `Pool` 是两种重要的工具，它们用于在多进程环境中共享数据和管理进程池，能有效提高并行计算的效率。以下是对这两个工具的简要说明及其功能作用。
+在 Python 的 `multiprocessing` 模块中，`Manager` 和 `Pool`
+是两种重要的工具，它们用于在多进程环境中共享数据和管理进程池，能有效提高并行计算的效率。以下是对这两个工具的简要说明及其功能作用。
 
 #### 1. **Manager**
-`Manager` 是用于创建可以在多个进程之间共享的对象。通常，进程间的数据是隔离的，而 `Manager` 通过提供共享数据结构来解决这个问题，使得多个进程可以读写共享的变量或对象。
+
+`Manager` 是用于创建可以在多个进程之间共享的对象。通常，进程间的数据是隔离的，而 `Manager`
+通过提供共享数据结构来解决这个问题，使得多个进程可以读写共享的变量或对象。
 
 - **功能**：`Manager` 可以创建线程安全的共享对象（如列表、字典、队列等），并且这些对象在多个进程之间是同步的。
 - **常见方法**：
-  - `manager.list()`：创建一个共享的列表。
-  - `manager.dict()`：创建一个共享的字典。
-  - `manager.Queue()`：创建一个共享的队列。
-  - `manager.Value()` 和 `manager.Array()`：创建共享的单一数据类型或数组。
-  
+    - `manager.list()`：创建一个共享的列表。
+    - `manager.dict()`：创建一个共享的字典。
+    - `manager.Queue()`：创建一个共享的队列。
+    - `manager.Value()` 和 `manager.Array()`：创建共享的单一数据类型或数组。
+
   **使用场景**：在多进程中，`Manager` 被用来管理进程间的数据共享，例如在多个进程中共享一个错误列表或进度条，确保数据的一致性和同步。
 
 #### 2. **Pool**
+
 `Pool` 是 `multiprocessing` 模块中的一个进程池管理工具，用于创建多个子进程并发执行任务。它能显著简化多进程编程，并提供了方便的接口来控制进程池的大小和任务分配。
 
 - **功能**：`Pool` 允许创建一个进程池，通过池中的多个进程并行执行任务，从而提高程序的执行效率。它还提供了任务的异步执行和结果的回收机制。
 - **常见方法**：
-  - `pool.apply(func, args)`：同步执行函数，返回结果。
-  - `pool.apply_async(func, args)`：异步执行函数，返回一个 `AsyncResult` 对象，可以通过该对象获取任务的结果。
-  - `pool.map(func, iterable)`：将可迭代对象的每个元素传给函数 `func`，并行处理。
-  - `pool.imap(func, iterable)`：类似于 `map`，但支持惰性迭代（即按需返回结果），适合处理大规模数据。
-  - `pool.imap_unordered(func, iterable)`：与 `imap` 类似，但返回结果的顺序与输入顺序无关，处理速度更快。
+    - `pool.apply(func, args)`：同步执行函数，返回结果。
+    - `pool.apply_async(func, args)`：异步执行函数，返回一个 `AsyncResult` 对象，可以通过该对象获取任务的结果。
+    - `pool.map(func, iterable)`：将可迭代对象的每个元素传给函数 `func`，并行处理。
+    - `pool.imap(func, iterable)`：类似于 `map`，但支持惰性迭代（即按需返回结果），适合处理大规模数据。
+    - `pool.imap_unordered(func, iterable)`：与 `imap` 类似，但返回结果的顺序与输入顺序无关，处理速度更快。
 
   **使用场景**：`Pool` 适用于需要并发执行多个独立任务的场景，比如处理多个文件、执行多个计算任务等。通过进程池，可以有效控制并发进程的数量并避免创建过多进程导致的性能瓶颈。
 
 ### 结合使用 `Manager` 和 `Pool`
-在多进程任务中，`Manager` 和 `Pool` 可以结合使用，以便在并行计算中共享和更新数据。例如，在处理大量文件时，可以使用 `Pool` 创建多个子进程并行处理每个文件，而使用 `Manager` 创建一个共享的列表来记录处理过程中出错的文件路径。
+
+在多进程任务中，`Manager` 和 `Pool` 可以结合使用，以便在并行计算中共享和更新数据。例如，在处理大量文件时，可以使用 `Pool`
+创建多个子进程并行处理每个文件，而使用 `Manager` 创建一个共享的列表来记录处理过程中出错的文件路径。
 
 ```python
 from multiprocessing import Pool, Manager
@@ -253,8 +470,6 @@ pip install python-magic
 m = magic.Magic()  # 不带参数，获取更详细的描述file_info = m.from_file(“document.pdf”)print(file_info)  # 输出： PDF document， version 1.7
 ```
 
-
-
 ## requests 自带重试
 
 ```python
@@ -281,11 +496,11 @@ except Exception as e:
     print(type(e))
 ```
 
-
-
 ## 去除文本中HTML标签
 
-> Bleach 是一个用于清理 HTML 输入的 Python 库，能够帮助开发者避免跨站脚本攻击（XSS）。它通过白名单的方式来许可特定的 HTML 标签和属性，从而有效地清理输入数据，确保 Web 应用的安全性。Bleach 易于使用，可以非常方便地集成到 Web 应用中，是保障 Web 应用安全的有力助手。
+> Bleach 是一个用于清理 HTML 输入的 Python 库，能够帮助开发者避免跨站脚本攻击（XSS）。它通过白名单的方式来许可特定的 HTML
+> 标签和属性，从而有效地清理输入数据，确保 Web 应用的安全性。Bleach 易于使用，可以非常方便地集成到 Web 应用中，是保障 Web
+> 应用安全的有力助手。
 
 `pip install bleach`
 
@@ -306,8 +521,6 @@ print(cleaned_html)
 # result --> <p>Hello <b>World</b>!</p>
 ```
 
-
-
 ## Python subprocess 执行环境
 
 ```python
@@ -327,11 +540,10 @@ process = Popen(
 )
 ```
 
-
-
 ## Python 代码性能分析工具
 
-> [Pyinstrument](https://pyinstrument.readthedocs.io/en/latest/) 是一款强大的 Python 代码性能分析工具，它能帮助你找到代码中耗时最多的部分，从而进行优化，提升程序执行效率。它就像一把探照灯，照亮了代码执行的黑暗角落，让你清晰地看到代码运行的真实情况。
+> [Pyinstrument](https://pyinstrument.readthedocs.io/en/latest/) 是一款强大的 Python
+> 代码性能分析工具，它能帮助你找到代码中耗时最多的部分，从而进行优化，提升程序执行效率。它就像一把探照灯，照亮了代码执行的黑暗角落，让你清晰地看到代码运行的真实情况。
 
 ## 音频神器
 
@@ -339,7 +551,7 @@ process = Popen(
 
 ## 网络请求
 
-### [HTTPX](https://www.python-httpx.org/) 
+### [HTTPX](https://www.python-httpx.org/)
 
 > HTTPX 是 Python 3 的全功能 HTTP 客户端，它提供同步和异步 API，并支持 HTTP/1.1 和 HTTP/2。
 
@@ -366,19 +578,13 @@ with open("temp.csv", "w", "w", encoding='utf-8', newline="") as f:
     f.write(dataset.export(format="csv"))
 ```
 
-
-
 ## 自动化运维
 
 [pyinfra](https://docs.pyinfra.com/en/next/index.html)
 
-
-
 ## 全能解压库
 
 [patool](https://wummel.github.io/patool/)
-
-
 
 ## 项目规范
 
@@ -386,13 +592,9 @@ with open("temp.csv", "w", "w", encoding='utf-8', newline="") as f:
 
 [原文](https://zhuanlan.zhihu.com/p/666166082)
 
-
-
 ## 脚本加密
 
 <iframe style="height: 400px;width: 100%;" src="https://pyarmor.readthedocs.io/zh/stable/index.html"/>
-
-
 
 ## 时间函数strftime与strptime
 
@@ -400,17 +602,18 @@ with open("temp.csv", "w", "w", encoding='utf-8', newline="") as f:
 >
 > **strptime：**将字符串解析为给定格式的日期时间对象。**字符串=>日期时间对象，解析字符串**
 
-|      | strftime                                                     | strptime                                                    |
-| ---- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| 用法 | 根据给定的格式将对日期时间象转换为字符串                     | 将字符串解析为给定相应格式的datetime 对象                   |
-| 类型 | 实例方法                                                     | 类方法                                                      |
-| 方法 | date; datetime; time                                         | datetime                                                    |
-| 用法 | strftime(format)                                             | strptime(date_string, format)                               |
+|    | strftime                                                      | strptime                                                    |
+|----|---------------------------------------------------------------|-------------------------------------------------------------|
+| 用法 | 根据给定的格式将对日期时间象转换为字符串                                          | 将字符串解析为给定相应格式的datetime 对象                                   |
+| 类型 | 实例方法                                                          | 类方法                                                         |
+| 方法 | date; datetime; time                                          | datetime                                                    |
+| 用法 | strftime(format)                                              | strptime(date_string, format)                               |
 | 示例 | datetime.datetime(2006, 11, 21, 16, 30) => '2006-11-21 16:30' | "21/11/06 16:30" => datetime.datetime(2006, 11, 21, 16, 30) |
 
 ### strftime函数
 
-> **作用：**将给定格式的日期时间对象转换为字符串。**日期时间对象=>字符串，控制日期时间对象的输出格式，**date、datetime、time对象都支持strftime(format) 方法，可用来创建由一个显式格式字符串所控制的表示时间的字符串。要获取格式指令的完整列表，查看文末列表。
+> **作用：**将给定格式的日期时间对象转换为字符串。**日期时间对象=>字符串，控制日期时间对象的输出格式，**
+> date、datetime、time对象都支持strftime(format) 方法，可用来创建由一个显式格式字符串所控制的表示时间的字符串。要获取格式指令的完整列表，查看文末列表。
 >
 > **用法：**datetime.strftime(format)
 
@@ -429,7 +632,8 @@ dt.strftime("%A, %d. %B %Y %I:%M%p")
 
 ### strptime函数
 
->**作用：**按照特定时间格式将字符串转换（解析）为时间类型。返回一个由显式格式字符串所指明的代表时间的字符串。 要获取格式指令的完整列表，查看文末列表。
+> **作用：**按照特定时间格式将字符串转换（解析）为时间类型。返回一个由显式格式字符串所指明的代表时间的字符串。
+> 要获取格式指令的完整列表，查看文末列表。
 >
 >**语法：**datetime.strptime(date_string, format)
 
@@ -446,29 +650,29 @@ datetime.datetime(2006, 11, 21, 16, 30)
 
 ### 格式指令的完整列表
 
-| %y   | 两位数的年份表示（00-99）                 |
-| ---- | ----------------------------------------- |
-| %Y   | 四位数的年份表示（000-9999）              |
-| %m   | 月份（01-12）                             |
-| %d   | 月内中的一天（0-31）                      |
-| %H   | 24小时制小时数（0-23）                    |
-| %I   | 12小时制小时数（01-12）                   |
-| %M   | 分钟数（00=59）                           |
-| %S   | 秒（00-59）                               |
-| %a   | 本地简化星期名称                          |
-| %A   | 本地完整星期名称                          |
-| %b   | 本地简化的月份名称                        |
-| %B   | 本地完整的月份名称                        |
-| %c   | 本地相应的日期表示和时间表示              |
-| %j   | 年内的一天（001-366                       |
-| %p   | 本地A.M.或P.M.的等价符                    |
-| %U   | 一年中的星期数（00-53）星期天为星期的开始 |
-| %w   | 星期（0-6），星期天为星期的开始           |
-| %W   | 一年中的星期数（00-53）星期一为星期的开始 |
-| %x   | 本地相应的日期表示                        |
-| %X   | 本地相应的时间表示                        |
-| %Z   | 当前时区的名称                            |
-| %%   | %号本身                                   |
+| %y | 两位数的年份表示（00-99）         |
+|----|-------------------------|
+| %Y | 四位数的年份表示（000-9999）      |
+| %m | 月份（01-12）               |
+| %d | 月内中的一天（0-31）            |
+| %H | 24小时制小时数（0-23）          |
+| %I | 12小时制小时数（01-12）         |
+| %M | 分钟数（00=59）              |
+| %S | 秒（00-59）                |
+| %a | 本地简化星期名称                |
+| %A | 本地完整星期名称                |
+| %b | 本地简化的月份名称               |
+| %B | 本地完整的月份名称               |
+| %c | 本地相应的日期表示和时间表示          |
+| %j | 年内的一天（001-366           |
+| %p | 本地A.M.或P.M.的等价符         |
+| %U | 一年中的星期数（00-53）星期天为星期的开始 |
+| %w | 星期（0-6），星期天为星期的开始       |
+| %W | 一年中的星期数（00-53）星期一为星期的开始 |
+| %x | 本地相应的日期表示               |
+| %X | 本地相应的时间表示               |
+| %Z | 当前时区的名称                 |
+| %% | %号本身                    |
 
 ## 三方库拉取信息查看
 
@@ -476,15 +680,11 @@ datetime.datetime(2006, 11, 21, 16, 30)
 
 <iframe style="height: 600px;width: 100%;" src="https://pypistats.org/packages/yundownload"/>
 
-
-
 ## TUI模块
 
 > 包含常用的进度条、表格输出等功能
 
-<iframe style="height: 600px;width: 100%;" src="https://www.osgeo.cn/rich/console.html"/>
-
-
+[rich 官方文档](https://www.osgeo.cn/rich/console.html)
 
 ## 表格打印
 
@@ -497,8 +697,6 @@ table = PrettyTable(['title', 'img_url'])
 table.add_row(['title', 'img_url'])
 print(table)
 ```
-
-
 
 ## 多因子身份验证
 
@@ -531,10 +729,14 @@ print(pyotp.__version__)
 
 PyOTP的核心概念非常简单，主要包括以下几点：
 
-1. 1. **密钥（Secret Key）**：用于生成一次性密码的基础。
-2. 2. **TOTP（基于时间的一次性密码）**：根据当前时间和密钥生成的一次性密码。
-3. 3. **HOTP（基于HMAC的一次性密码）**：根据计数器和密钥生成的一次性密码。
-4. 4. **URI**：用于在不同设备间共享OTP配置的标准格式。
+1.
+    1. **密钥（Secret Key）**：用于生成一次性密码的基础。
+2.
+    2. **TOTP（基于时间的一次性密码）**：根据当前时间和密钥生成的一次性密码。
+3.
+    3. **HOTP（基于HMAC的一次性密码）**：根据计数器和密钥生成的一次性密码。
+4.
+    4. **URI**：用于在不同设备间共享OTP配置的标准格式。
 
 让我们通过一个简单的例子来了解TOTP的基本用法：
 
@@ -615,7 +817,8 @@ if __name__ == '__main__':
 
 ### PyOTP的实用小技巧
 
-1. 1. **生成QR码**：PyOTP可以生成兼容Google Authenticator的URI，我们可以将这个URI转换为QR码，方便用户扫描：
+1.
+    1. **生成QR码**：PyOTP可以生成兼容Google Authenticator的URI，我们可以将这个URI转换为QR码，方便用户扫描：
 
 ```
 import pyotp
@@ -632,14 +835,13 @@ img = qr.make_image(fill_color="black", back_color="white")
 img.save("qr.png")
 ```
 
-1. 1. **时间漂移处理**：在实际应用中，客户端和服务器的时间可能存在微小差异。PyOTP允许我们在验证时考虑这种时间漂移：
+1.
+    1. **时间漂移处理**：在实际应用中，客户端和服务器的时间可能存在微小差异。PyOTP允许我们在验证时考虑这种时间漂移：
 
 ```
 totp = pyotp.TOTP('base32secret3232')
 totp.verify('492039', valid_window=1)  # 允许前后30秒的误差
 ```
-
-
 
 ## 脚手架模板
 
@@ -741,7 +943,6 @@ print(chardet.detect(my_string))
 # {'encoding': 'ascii', 'confidence': 1.0, 'language': ''}
 ```
 
-
 ## 格式化
 
 ```python
@@ -757,6 +958,7 @@ print(chardet.detect(my_string))
 在项目根目录创建`mkdocs.yml`文件
 
 结构为：
+
 ```
 mkdocs.yml
 docs/
@@ -770,6 +972,7 @@ docs/
 `pip install mkdocs-material`
 
 可以通过配置插件`git-revision-date-localized`根据git提交来显示文档修改时间
+
 ```yaml
 site_name: Yun download
 site_url: https://2214372851.github.io/yundownload/
@@ -792,7 +995,6 @@ plugins:
       lang: ru
 ```
 
-
 按照前端惯例`docs`文件夹中的`index.md`是项目主页
 
 其余的文档可以放在`docs`下或子文件夹下
@@ -801,16 +1003,13 @@ plugins:
 
 `mkdocs gh-deploy`
 
-
-
-
 ## 网页防盗链
 
 溯源找上级URL，如果没有请求非法
 
 ```json
 {
-    "Referer": "https://www.baidu.com"
+  "Referer": "https://www.baidu.com"
 }
 ```
 
@@ -819,8 +1018,6 @@ plugins:
 > 创建简易的http文件服务器（不推荐在生产环境使用应当选择 `nginx` 等）
 
 `python -m http.server 80`
-
-
 
 ## 代理
 
@@ -833,8 +1030,6 @@ proxies = {
 requests.get(url,proxies=proxies)
 ```
 
-
-
 ## 进程（资源单位）
 
 > 每个进程至少要有一个线程
@@ -845,8 +1040,6 @@ requests.get(url,proxies=proxies)
 from multiprocessing import process
 #用法和多线程一致
 ```
-
-
 
 ## 线程（运行单位）
 
@@ -1025,8 +1218,6 @@ async with aiohttp.ClientSession() as session:
 执行终端命令
 os.system()
 ```
-
-
 
 ## 加密解密模块
 
@@ -1244,8 +1435,6 @@ wav.close()
 [(0, 'Spring'), (1, 'Summer'), (2, 'Fall'), (3, 'Winter')]
 ```
 
-
-
 ## collections：容器库
 
 - Counter：字典的子类，提供了可哈希对象的计数功能
@@ -1279,7 +1468,6 @@ wav.close()
   Counter()
   ```
 
-  
 
 - defaultdict：字典的子类，提供了一个工厂函数，为字典查询提供了默认值
 
@@ -1319,7 +1507,6 @@ wav.close()
   deque(['f', 'p', 'y', 't', 'h', 'o', 'n', 'e'], maxlen=10)
   ```
 
-  
 
 - ChainMap：类似字典的容器类，将多个映射集合到一个视图里面
 

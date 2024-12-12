@@ -1,19 +1,20 @@
 import {defineConfig} from 'vitepress'
 import {RSSOptions, RssPlugin} from "vitepress-plugin-rss";
+import { withMermaid } from "vitepress-plugin-mermaid";
 import fs from 'fs';
 import path from 'path';
 
 // https://vitepress.dev/reference/site-config
-const baseUrl = 'https://2214372851.github.io/YunDocs';
+const baseUrl = 'https://2214372851.github.io';
 const RSS: RSSOptions = {
     title: 'YunDocs',
     description: 'YunDocs | Documented study notes have been developed for module documentation',
-    site_url: baseUrl,
+    baseUrl: baseUrl,
     copyright: 'Copyright © 2023-present Yun'
 }
 const aiDir = path.resolve(__dirname, '../ai'); // 确保路径正确
 const aiFiles = fs.readdirSync(aiDir).filter((file) => file.endsWith('.md'));
-export default defineConfig({
+export default withMermaid({
     title: "YunDocs",
     base: '/YunDocs/',
     description: "YunDocs | Documented study notes have been developed for module documentation",
@@ -21,6 +22,9 @@ export default defineConfig({
         plugins: [
             RssPlugin(RSS)
         ]
+    },
+    markdown: {
+        lineNumbers: true,
     },
     head: [
         ['link', {rel: 'icon', type: 'image/svg+xml', href: '/YunDocs/logo.jpg'}],
@@ -68,13 +72,9 @@ export default defineConfig({
                             link: '/modules/yundownload'
                         },
                         {
-                            text: '快速入门(v2)',
-                            link: '/modules/yundownload/v2-quickstart'
-                        },
-                        {
-                            text: '快速入门(v3)',
-                            link: '/modules/yundownload/v3-quickstart'
-                        },
+                            text: '快速入门',
+                            link: '/modules/yundownload/quickstart'
+                        }
                     ]
                 },
             ],

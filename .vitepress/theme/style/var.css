@@ -12,7 +12,30 @@
 /*}*/
 /* 以前的vp-c-brand已弃用 */
 :root {
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #bd34fe, #41d1ff);
-  --vp-home-hero-text-color: red
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: -webkit-linear-gradient(315deg, rgb(66, 211, 146) 25%, rgb(100, 126, 255));
+    --vp-home-hero-text-color: red
+}
+
+
+.vp-doc div[class*='language-'], .vp-block {
+    border: 2px solid #43D294;
+}
+
+.vp-doc blockquote {
+    border-left: 4px solid #326CE5;
+    background-color: rgb(50, 108, 229, .2);
+    color: #3C3C43;
+}
+
+.dark {
+    .vp-doc blockquote {
+        border-left: 4px solid #326CE5;
+        background-color: rgb(50, 108, 229, .2);
+        color: #DBDBD3;
+    }
+
+    .vp-doc div[class*='language-'], .vp-block {
+        border: 2px solid #4CA6FF;
+    }
 }
