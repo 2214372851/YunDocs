@@ -108,7 +108,7 @@ Yun download 建立在 `httpx` 模块上，并为您提供：
 
 ## 文档
 
-要了解所有基础知识，请转到最新[快速入门](v3-quickstart.md)。
+要了解所有基础知识，请转到最新[快速入门](quickstart.md)。
 
 ## 依赖项
 
