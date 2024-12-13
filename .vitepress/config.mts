@@ -1,4 +1,3 @@
-import {defineConfig} from 'vitepress'
 import {RSSOptions, RssPlugin} from "vitepress-plugin-rss";
 import { withMermaid } from "vitepress-plugin-mermaid";
 import fs from 'fs';
@@ -24,7 +23,7 @@ export default withMermaid({
         ]
     },
     markdown: {
-        lineNumbers: true,
+        // lineNumbers: true,
     },
     head: [
         ['link', {rel: 'icon', type: 'image/svg+xml', href: '/YunDocs/logo.jpg'}],
