@@ -17,7 +17,7 @@
 
 ### 示例代码
 
-```python{32-36,43-79,109-112}
+```python
 co = ChromiumOptions().set_browser_path('google-chrome')
 co.new_env()
 #co.headless() # 部分 cloudflare 无头模式无法绕过 // [!code error]

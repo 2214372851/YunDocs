@@ -64,21 +64,24 @@ import matplotlib.pyplot as plt
 
 接下来，使用 NumPy 提供的函数 arange() 创建一组数据来绘制图像。
 
-```
-#引入numpy包import numpy as np#获得0到2π之间的ndarray对象x = np.arange(0, math.pi*2, 0.05)
+```python
+#引入numpy包
+import numpy as np
+#获得0到2π之间的ndarray对象
+x = np.arange(0, math.pi*2, 0.05)
 ```
 
 上述所得 x 的值作用到 x 轴上，而该值对应的正弦值，也就是 y 值，使用以下方法获取：
 
-y = np.sin(x)
+`y = np.sin(x)`
 
 使用 plot() 函数对 x、y 进行绘制。
 
-plt.plot(x,y)
+`plt.plot(x,y)`
 
 主要的绘图工作已经完成，不过还需要绘制一些细节，需要我们补充一下，比如图像的标题(title)、x 轴与 y 轴的标签（label）等。
 
-```
+```python
 plt.xlabel("angle")
 plt.ylabel("sine")
 plt.title('sine wave')
@@ -86,7 +89,7 @@ plt.title('sine wave')
 
 完整的程序代码如下：
 
-```
+```python
 from matplotlib import pyplot as plt
 import numpy as np
 import math
@@ -123,8 +126,10 @@ plt.show()
 
 Matplotlib 提供了`matplotlib.figure`图形类模块，它包含了创建图形对象的方法。通过调用 pyplot 模块中 figure() 函数来实例化 figure 对象。如下所示：
 
-```
-from matplotlib import pyplot as plt#创建图形对象fig = plt.figure()
+```python
+from matplotlib import pyplot as plt
+#创建图形对象
+fig = plt.figure()
 ```
 
 该函数的参数值，如下所示：
@@ -151,8 +156,10 @@ add_axes() 的参数值是一个序列，序列中的 4 个数字分别对应图
 
 设置 x 和 y 轴的标签以及标题，如下所示：
 
-```
-ax.set_title("sine wave")ax.set_xlabel('angle')ax.set_ylabel('sine')
+```python
+ax.set_title("sine wave")
+ax.set_xlabel('angle')
+ax.set_ylabel('sine')
 ```
 
 调用 axes 对象的 plot() 方法，对 x 、 y 数组进行绘图操作：
@@ -161,8 +168,19 @@ ax.plot(x,y)
 
 完整的代码如下所示：
 
-```
-from matplotlib import pyplot as pltimport numpy as npimport mathx = np.arange(0, math.pi*2, 0.05)y = np.sin(x)fig = plt.figure()ax = fig.add_axes([0,0,1,1])ax.plot(x,y)ax.set_title("sine wave")ax.set_xlabel('angle')ax.set_ylabel('sine')plt.show()
+```python
+from matplotlib import pyplot as plt
+import numpy as np
+import math
+x = np.arange(0, math.pi*2, 0.05)
+y = np.sin(x)
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+ax.plot(x,y)
+ax.set_title("sine wave")
+ax.set_xlabel('angle')
+ax.set_ylabel('sine')
+plt.show()
 ```
 
 输出结果如下：
@@ -269,9 +287,22 @@ ax.legend(handles, labels, loc)
 
 下面的例子，以直线图的形式展示了电视、智能手机广告费与其所带来产品销量的关系图。其中描述电视的是带有黄色和方形标记的实线，而代表智能手机的则是绿色和圆形标记的虚线。
 
-```
-纯文本复制
-import matplotlib.pyplot as plty = [1, 4, 9, 16, 25,36,49, 64]x1 = [1, 16, 30, 42,55, 68, 77,88]x2 = [1,6,12,18,28, 40, 52, 65]fig = plt.figure()ax = fig.add_axes([0,0,1,1])#使用简写的形式color/标记符/线型l1 = ax.plot(x1,y,'ys-') l2 = ax.plot(x2,y,'go--') ax.legend(labels = ('tv', 'Smartphone'), loc = 'lower right') # legend placed at lower rightax.set_title("Advertisement effect on sales")ax.set_xlabel('medium')ax.set_ylabel('sales')plt.show()
+```python
+import matplotlib.pyplot as plt
+y = [1, 4, 9, 16, 25,36,49, 64]
+x1 = [1, 16, 30, 42,55, 68, 77,88]
+x2 = [1,6,12,18,28, 40, 52, 65]
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+#使用简写的形式color/标记符/线型
+l1 = ax.plot(x1,y,'ys-') 
+l2 = ax.plot(x2,y,'go--') 
+ax.legend(labels = ('tv', 'Smartphone'), loc = 'lower right') 
+# legend placed at lower right
+ax.set_title("Advertisement effect on sales")
+ax.set_xlabel('medium')
+ax.set_ylabel('sales')
+plt.show()
 ```
 
 输出结果如下：
@@ -289,7 +320,7 @@ import matplotlib.pyplot as plty = [1, 4, 9, 16, 25,36,49, 64]x1 = [1, 16, 30, 4
 
 `matplotlib.pyplot`模块提供了一个 subplot() 函数，它可以均等地划分画布，该函数的参数格式如下：
 
-plt.subplot(nrows, ncols, index)
+`plt.subplot(nrows, ncols, index)`
 
 nrows 与 ncols 表示要划分几行几列的子区域（nrows*nclos表示子图数量），index 的初始值为1，用来选定具体的某个子区域。
 
@@ -302,8 +333,15 @@ nrows 与 ncols 表示要划分几行几列的子区域（nrows*nclos表示子�
 
 如果新建的子图与现有的子图重叠，那么重叠部分的子图将会被自动删除，因为它们不可以共享绘图区域。
 
-```
-import matplotlib.pyplot as pltplt.plot([1,2,3])#现在创建一个子图，它表示一个有2行1列的网格的顶部图。#因为这个子图将与第一个重叠，所以之前创建的图将被删除plt.subplot(211)plt.plot(range(12))#创建带有黄色背景的第二个子图plt.subplot(212, facecolor='y')plt.plot(range(12))
+```python
+import matplotlib.pyplot as plt
+plt.plot([1,2,3])
+#现在创建一个子图，它表示一个有2行1列的网格的顶部图。#因为这个子图将与第一个重叠，所以之前创建的图将被删除
+plt.subplot(211)
+plt.plot(range(12))
+#创建带有黄色背景的第二个子图
+plt.subplot(212, facecolor='y')
+plt.plot(range(12))
 ```
 
 上述代码运行结果，如下图所示：
@@ -315,8 +353,13 @@ import matplotlib.pyplot as pltplt.plot([1,2,3])#现在创建一个子图，它�
 
 如果不想覆盖之前的图，需要使用 add_subplot() 函数，代码如下：
 
-```
-import matplotlib.pyplot as pltfig = plt.figure()ax1 = fig.add_subplot(111)ax1.plot([1,2,3])ax2 = fig.add_subplot(221, facecolor='y')ax2.plot([1,2,3])
+```python
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax1.plot([1,2,3])
+ax2 = fig.add_subplot(221, facecolor='y')
+ax2.plot([1,2,3])
 ```
 
 执行上述代码，输出结果如下：
@@ -329,8 +372,21 @@ import matplotlib.pyplot as pltfig = plt.figure()ax1 = fig.add_subplot(111)ax1.p
 
 通过给画布添加 axes 对象可以实现在同一画布中插入另外的图像。
 
-```
-import matplotlib.pyplot as pltimport numpy as npimport mathx = np.arange(0, math.pi*2, 0.05)fig=plt.figure()axes1 = fig.add_axes([0.1, 0.1, 0.8, 0.8]) # main axesaxes2 = fig.add_axes([0.55, 0.55, 0.3, 0.3]) # inset axesy = np.sin(x)axes1.plot(x, y, 'b')axes2.plot(x,np.cos(x),'r')axes1.set_title('sine')axes2.set_title("cosine")plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import mathx = np.arange(0, math.pi*2, 0.05)
+fig=plt.figure()
+axes1 = fig.add_axes([0.1, 0.1, 0.8, 0.8]) 
+# main axes
+axes2 = fig.add_axes([0.55, 0.55, 0.3, 0.3]) 
+# inset 
+axesy = np.sin(x)
+axes1.plot(x, y, 'b')
+axes2.plot(x,np.cos(x),'r')
+axes1.set_title('sine')
+axes2.set_title("cosine")
+plt.show()
 ```
 
 输出结果如下：
@@ -344,7 +400,7 @@ import matplotlib.pyplot as pltimport numpy as npimport mathx = np.arange(0, mat
 
 subplots 的函数格式如下：
 
-fig , ax = plt.subplots(nrows, ncols)
+`fig , ax = plt.subplots(nrows, ncols)`
 
 nrows 与 ncols 表示两个整数参数，它们指定子图所占的行数、列数。
 
@@ -352,8 +408,24 @@ nrows 与 ncols 表示两个整数参数，它们指定子图所占的行数、�
 
 下面我们创建了一个 2 行 2 列的子图，并在每个子图中显示 4 个不同的图像。
 
-```
-import matplotlib.pyplot as pltfig,a =  plt.subplots(2,2)import numpy as npx = np.arange(1,5)#绘制平方函数a[0][0].plot(x,x*x)a[0][0].set_title('square')#绘制平方根图像a[0][1].plot(x,np.sqrt(x))a[0][1].set_title('square root')#绘制指数函数a[1][0].plot(x,np.exp(x))a[1][0].set_title('exp')#绘制对数函数a[1][1].plot(x,np.log10(x))a[1][1].set_title('log')plt.show()
+```python
+import matplotlib.pyplot as plt
+fig,a =  plt.subplots(2,2)
+import numpy as np
+x = np.arange(1,5)
+#绘制平方函数
+a[0][0].plot(x,x*x)
+a[0][0].set_title('square')
+#绘制平方根图像
+a[0][1].plot(x,np.sqrt(x))
+a[0][1].set_title('square root')
+#绘制指数函数
+a[1][0].plot(x,np.exp(x))
+a[1][0].set_title('exp')
+#绘制对数函数
+a[1][1].plot(x,np.log10(x))
+a[1][1].set_title('log')
+plt.show()
 ```
 
 上述代码的输出结果如下：
@@ -369,7 +441,7 @@ import matplotlib.pyplot as pltfig,a =  plt.subplots(2,2)import numpy as npx = n
 
 函数语法格式如下：
 
-plt.subplot2grid(shape, location, rowspan, colspan)
+`plt.subplot2grid(shape, location, rowspan, colspan)`
 
 参数含义如下：
 
@@ -379,8 +451,22 @@ plt.subplot2grid(shape, location, rowspan, colspan)
 
 下面，在画布（figure）中添加了行、列跨度均不相同的绘图子区域，然后在每个绘图区上，绘制不同的图形。示例代码如下：
 
-```
-import matplotlib.pyplot as plt#使用 colspan指定列，使用rowspan指定行a1 = plt.subplot2grid((3,3),(0,0),colspan = 2)a2 = plt.subplot2grid((3,3),(0,2), rowspan = 3)a3 = plt.subplot2grid((3,3),(1,0),rowspan = 2, colspan = 2)import numpy as npx = np.arange(1,10)a2.plot(x, x*x)a2.set_title('square')a1.plot(x, np.exp(x))a1.set_title('exp')a3.plot(x, np.log(x))a3.set_title('log')plt.tight_layout()plt.show()
+```python
+import matplotlib.pyplot as plt
+#使用 colspan指定列，使用rowspan指定行
+a1 = plt.subplot2grid((3,3),(0,0),colspan = 2)
+a2 = plt.subplot2grid((3,3),(0,2), rowspan = 3)
+a3 = plt.subplot2grid((3,3),(1,0),rowspan = 2, colspan = 2)
+import numpy as np
+x = np.arange(1,10)
+a2.plot(x, x*x)
+a2.set_title('square')
+a1.plot(x, np.exp(x))
+a1.set_title('exp')
+a3.plot(x, np.log(x))
+a3.set_title('log')
+plt.tight_layout()
+plt.show()
 ```
 
 输出结果如下：
@@ -396,7 +482,7 @@ import matplotlib.pyplot as plt#使用 colspan指定列，使用rowspan指定行
 
 grid() 的函数使用格式如下：
 
-grid(color='b', ls = '-.', lw = 0.25)
+`grid(color='b', ls = '-.', lw = 0.25)`
 
 参数含义如下：
 
@@ -408,9 +494,24 @@ grid(color='b', ls = '-.', lw = 0.25)
 
 实例如下：
 
-```
-纯文本复制
-import matplotlib.pyplot as pltimport numpy as np#fig画布；axes子图区域fig, axes = plt.subplots(1,3, figsize = (12,4))x = np.arange(1,11)axes[0].plot(x, x**3, 'g',lw=2)#开启网格axes[0].grid(True)axes[0].set_title('default grid')axes[1].plot(x, np.exp(x), 'r')#设置网格的颜色，线型，线宽axes[1].grid(color='b', ls = '-.', lw = 0.25)axes[1].set_title('custom grid')axes[2].plot(x,x)axes[2].set_title('no grid')fig.tight_layout()plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+#fig画布；axes子图区域
+fig, axes = plt.subplots(1,3, figsize = (12,4))
+x = np.arange(1,11)
+axes[0].plot(x, x**3, 'g',lw=2)
+#开启网格
+axes[0].grid(True)
+axes[0].set_title('default grid')
+axes[1].plot(x, np.exp(x), 'r')
+#设置网格的颜色，线型，线宽
+axes[1].grid(color='b', ls = '-.', lw = 0.25)
+axes[1].set_title('custom grid')
+axes[2].plot(x,x)
+axes[2].set_title('no grid')
+fig.tight_layout()
+plt.show()
 ```
 
 上述代码执行后，输出结果：
@@ -426,7 +527,7 @@ import matplotlib.pyplot as pltimport numpy as np#fig画布；axes子图区域fi
 
 示例：右侧的子图显示对数刻度，左侧子图则显示标量刻度。
 
-```
+```python
 import matplotlib.pyplot as plt
 import numpy as np
 fig, axes = plt.subplots(1, 2, figsize=(10,4))
@@ -451,8 +552,19 @@ plt.show()
 
 轴是连接刻度的线，也就是绘图区域的边界，在绘图区域（axes 对象）的顶部、底部、左侧和右侧都有一个边界线（轴）。通过指定轴的颜色和宽度，从而对进行显示格式设置，比如将所有轴的颜色设置为 None，那么它们都会成为隐藏状态，或者也可以给轴添加相应的颜色。以下示例为左侧轴、底部轴分别设置了红色、蓝色，如下所示：
 
-```
-import matplotlib.pyplot as pltfig = plt.figure()ax = fig.add_axes([0,0,1,1])#为左侧轴，底部轴添加颜色ax.spines['bottom'].set_color('blue')ax.spines['left'].set_color('red')ax.spines['left'].set_linewidth(2)#将侧轴、顶部轴设置为Noneax.spines['right'].set_color(None)ax.spines['top'].set_color(None)ax.plot([1,2,3,4,5])plt.show()
+```python
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+#为左侧轴，底部轴添加颜色
+ax.spines['bottom'].set_color('blue')
+ax.spines['left'].set_color('red')
+ax.spines['left'].set_linewidth(2)
+#将侧轴、顶部轴设置为None
+ax.spines['right'].set_color(None)
+ax.spines['top'].set_color(None)
+ax.plot([1,2,3,4,5])
+plt.show()
 ```
 
 输出结果如下：
@@ -468,8 +580,19 @@ Matplotlib 可以根据自变量与因变量的取值范围，自动设置 x 轴
 
 下面示例分别对自动设置和自定义设置做了演示：第一种 Matplotlib 自动设置
 
-```
-import matplotlib.pyplot as pltimport numpy as npfig = plt.figure()#添加绘图区域a1 = fig.add_axes([0,0,1,1])#准备数据x = np.arange(1,10)#绘制函数图像a1.plot(x, np.exp(x))#添加题目a1.set_title('exp')plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+fig = plt.figure()
+#添加绘图区域
+a1 = fig.add_axes([0,0,1,1])
+#准备数据
+x = np.arange(1,10)
+#绘制函数图像
+a1.plot(x, np.exp(x))
+#添加题目
+a1.set_title('exp')
+plt.show()
 ```
 
 代码执行后，输出结果如下：
@@ -481,8 +604,19 @@ import matplotlib.pyplot as pltimport numpy as npfig = plt.figure()#添加绘图
 
 第二种：自定义设置，set_xlim() 将 x 轴的数值范围设置为（0到10)； set_ylim() 将 y 轴的范围设置为（0到10000）。
 
-```
-import matplotlib.pyplot as pltfig = plt.figure()a1 = fig.add_axes([0,0,1,1])import numpy as npx = np.arange(1,10)a1.plot(x, np.exp(x),'r')a1.set_title('exp')#设置y轴a1.set_ylim(0,10000)#设置x轴a1.set_xlim(0,10)plt.show()
+```python
+import matplotlib.pyplot as plt
+fig = plt.figure()
+a1 = fig.add_axes([0,0,1,1])
+import numpy as np
+x = np.arange(1,10)
+a1.plot(x, np.exp(x),'r')
+a1.set_title('exp')
+#设置y轴
+a1.set_ylim(0,10000)
+#设置x轴
+a1.set_xlim(0,10)
+plt.show()
 ```
 
 输出结果如下：
@@ -508,7 +642,7 @@ x 轴上的刻度标记，依次为 2，4，6，8，10。您也可以分别通�
 
 下面示例对刻度和标签的使用方法做了说明。
 
-```
+```python
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -556,7 +690,7 @@ Matplotlib 默认不支持中文字体，这因为 Matplotlib 只支持 ASCII �
 
 通过临时重写配置文件的方法，可以解决 Matplotlib 显示中文乱码的问题，代码如下所示：
 
-```
+```python
 import matplotlib.pyplot as plt
 plt.rcParams["font.sans-serif"]=["SimHei"] 
 #设置字体
@@ -566,8 +700,24 @@ plt.rcParams["axes.unicode_minus"]=False
 
 将上述代码添加到您的绘图程序中，即可解决中文乱码的问题。这是一种非常灵活、便捷的解决方法。完整的程序代码如下：
 
-```
-#绘制折线图import matplotlib.pyplot as pltplt.rcParams["font.sans-serif"]=["SimHei"] #设置字体plt.rcParams["axes.unicode_minus"]=False #正常显示负号year = [2017, 2018, 2019, 2020]people = [20, 40, 60, 70]#生成图表plt.plot(year, people)plt.xlabel('年份')plt.ylabel('人口')plt.title('人口增长')#设置纵坐标刻度plt.yticks([0, 20, 40, 60, 80])#设置填充选项：参数分别对应横坐标，纵坐标，纵坐标填充起始值，填充颜色plt.fill_between(year, people, 20, color = 'green')#显示图表plt.show()
+```python
+#绘制折线图
+import matplotlib.pyplot as plt
+plt.rcParams["font.sans-serif"]=["SimHei"] #设置字体
+plt.rcParams["axes.unicode_minus"]=False #正常显示负号
+year = [2017, 2018, 2019, 2020]
+people = [20, 40, 60, 70]
+#生成图表
+plt.plot(year, people)
+plt.xlabel('年份')
+plt.ylabel('人口')
+plt.title('人口增长')
+#设置纵坐标刻度
+plt.yticks([0, 20, 40, 60, 80])
+#设置填充选项：参数分别对应横坐标，纵坐标，纵坐标填充起始值，填充颜色
+plt.fill_between(year, people, 20, color = 'green')
+#显示图表
+plt.show()
 ```
 
 输出结果如下：
@@ -582,7 +732,7 @@ plt.rcParams["axes.unicode_minus"]=False
 
 Matplotlib 从配置文件 matplotlibrc 中读取相关配置信息，比如字体、样式等，因此我们需要对该配置文件进行更改。首先查看 matplotlibrc 所在的目录，使用如下代码确定目录位置：
 
-```
+```python
 import matplotlibmatplotlib.matplotlib_fname()
 ```
 
@@ -629,8 +779,16 @@ D:\python\python37\lib\site-packages\matplotlib\mpl-data\fonts\ttf
 
 编写如下代码进行测试：
 
-```
-import matplotlib.pyplot as pltimport numpy as npx = np.linspace(-8, 8, 1024)y1 = 0.618 * np.abs(x) - 0.8 * np.sqrt(64 - x ** 2)y2 = 0.618 * np.abs(x) + 0.8 * np.sqrt(64 - x ** 2)plt.plot(x, y1, color='r')plt.plot(x, y2, color='r')plt.title("我爱Python",fontsize=20,color="b")plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+x = np.linspace(-8, 8, 1024)
+y1 = 0.618 * np.abs(x) - 0.8 * np.sqrt(64 - x ** 2)
+y2 = 0.618 * np.abs(x) + 0.8 * np.sqrt(64 - x ** 2)
+plt.plot(x, y1, color='r')
+plt.plot(x, y2, color='r')
+plt.title("我爱Python",fontsize=20,color="b")
+plt.show()
 ```
 
 如果你对自己编写的程序没有强烈的“洁癖”，可以接受重复的代码，那么建议您选择第一种解决方法，因为这种方法灵活、轻便。当然您也可以选择第二种方式，一劳永逸的解决中文乱码问题。
@@ -643,8 +801,27 @@ import matplotlib.pyplot as pltimport numpy as npx = np.linspace(-8, 8, 1024)y1 
 
 下面示例绘制了一个具有两个 y 轴的图形，一个显示指数函数 exp(x)，另一个显示对数函数 log(x)。
 
-```
-import matplotlib.pyplot as pltimport numpy as np#创建图形对象fig = plt.figure()#添加子图区域a1 = fig.add_axes([0,0,1,1])#准备数据x = np.arange(1,11)#绘制指数函数a1.plot(x,np.exp(x))a1.set_ylabel('exp')#添加双轴a2 = a1.twinx()#‘ro’表示红色圆点a2.plot(x, np.log(x),'ro-')#绘制对数函数a2.set_ylabel('log')#绘制图例fig.legend(labels = ('exp','log'),loc='upper left')plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+#创建图形对象
+fig = plt.figure()
+#添加子图区域
+a1 = fig.add_axes([0,0,1,1])
+#准备数据
+x = np.arange(1,11)
+#绘制指数函数
+a1.plot(x,np.exp(x))
+a1.set_ylabel('exp')
+#添加双轴
+a2 = a1.twinx()
+#‘ro’表示红色圆点
+a2.plot(x, np.log(x),'ro-')
+#绘制对数函数
+a2.set_ylabel('log')
+#绘制图例
+fig.legend(labels = ('exp','log'),loc='upper left')
+plt.show()
 ```
 
 输出结果：
@@ -677,8 +854,18 @@ ax.bar(x, height, width, bottom, align)
 
 下面是一个关于 Matplotlib 柱状图的简单示例。它用来显示了不同编程语言的学习人数。
 
-```
-import matplotlib.pyplot as plt#创建图形对象fig = plt.figure()#添加子图区域，参数值表示[left, bottom, width, height ]ax = fig.add_axes([0,0,1,1])#准备数据langs = ['C', 'C++', 'Java', 'Python', 'PHP']students = [23,17,35,29,12]#绘制柱状图ax.bar(langs,students)plt.show()
+```python
+import matplotlib.pyplot as plt
+#创建图形对象
+fig = plt.figure()
+#添加子图区域，参数值表示[left, bottom, width, height ]
+ax = fig.add_axes([0,0,1,1])
+#准备数据
+langs = ['C', 'C++', 'Java', 'Python', 'PHP']
+students = [23,17,35,29,12]
+#绘制柱状图
+ax.bar(langs,students)
+plt.show()
 ```
 
 输出结果如下：
@@ -691,8 +878,19 @@ import matplotlib.pyplot as plt#创建图形对象fig = plt.figure()#添加子�
 
 通过调整柱状图的宽度，可以实现在同一 x 轴位置绘制多个柱状图。您可以将它们设置成不同的颜色，从而使它们更容易区分。下面示例描述了某工程学院过去四年中，三个专业录取的统招学生数量。
 
-```
-import numpy as npimport matplotlib.pyplot as plt#准备数据data = [[30, 25, 50, 20],[40, 23, 51, 17],[35, 22, 45, 19]]X = np.arange(4)fig = plt.figure()#添加子图区域ax = fig.add_axes([0,0,1,1])#绘制柱状图ax.bar(X + 0.00, data[0], color = 'b', width = 0.25)ax.bar(X + 0.25, data[1], color = 'g', width = 0.25)ax.bar(X + 0.50, data[2], color = 'r', width = 0.25)
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+#准备数据
+data = [[30, 25, 50, 20],[40, 23, 51, 17],[35, 22, 45, 19]]
+X = np.arange(4)
+fig = plt.figure()
+#添加子图区域
+ax = fig.add_axes([0,0,1,1])
+#绘制柱状图
+ax.bar(X + 0.00, data[0], color = 'b', width = 0.25)
+ax.bar(X + 0.25, data[1], color = 'g', width = 0.25)
+ax.bar(X + 0.50, data[2], color = 'r', width = 0.25)
 ```
 
 上述代码执行后，将显示四个柱状图，将每个柱状图又均分为三个小柱状图，每个柱状图占据 0.25 个单位。
@@ -708,8 +906,26 @@ bar() 函数提供了一个可选参数`bottom`，该参数可以指定柱状图
 
 下面是一个不同国家参加奥林匹克运动会所得奖牌（金银铜）的柱状堆叠图示例，如下所示：
 
-```
-import numpy as npimport matplotlib.pyplot as pltcountries = ['USA', 'India', 'China', 'Russia', 'Germany'] bronzes = np.array([38, 17, 26, 19, 15]) silvers = np.array([37, 23, 18, 18, 10]) golds = np.array([46, 27, 26, 19, 17]) # 此处的 _ 下划线表示将循环取到的值放弃，只得到[0,1,2,3,4]ind = [x for x, _ in enumerate(countries)] #绘制堆叠图plt.bar(ind, golds, width=0.5, label='golds', color='gold', bottom=silvers+bronzes) plt.bar(ind, silvers, width=0.5, label='silvers', color='silver', bottom=bronzes) plt.bar(ind, bronzes, width=0.5, label='bronzes', color='#CD853F') #设置坐标轴plt.xticks(ind, countries) plt.ylabel("Medals") plt.xlabel("Countries") plt.legend(loc="upper right") plt.title("2019 Olympics Top Scorers")plt.show()
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+countries = ['USA', 'India', 'China', 'Russia', 'Germany'] 
+bronzes = np.array([38, 17, 26, 19, 15]) 
+silvers = np.array([37, 23, 18, 18, 10]) 
+golds = np.array([46, 27, 26, 19, 17]) 
+# 此处的 _ 下划线表示将循环取到的值放弃，只得到[0,1,2,3,4]
+ind = [x for x, _ in enumerate(countries)] 
+#绘制堆叠图
+plt.bar(ind, golds, width=0.5, label='golds', color='gold', bottom=silvers+bronzes) 
+plt.bar(ind, silvers, width=0.5, label='silvers', color='silver', bottom=bronzes) 
+plt.bar(ind, bronzes, width=0.5, label='bronzes', color='#CD853F') 
+#设置坐标轴
+plt.xticks(ind, countries) 
+plt.ylabel("Medals") 
+plt.xlabel("Countries") 
+plt.legend(loc="upper right") 
+plt.title("2019 Olympics Top Scorers")
+plt.show()
 ```
 
 在上述代码中，第一次调用`plt.bar()`绘制了黄色柱状图， 第二次调用`plot.bar()`时绘制了灰色柱状图，最后一次调用`plt.bar()`则绘制最底部的柱状图。两个柱状图相接触的位置就是顶部与底部的位置，这样就构成了柱状堆叠图。
@@ -754,8 +970,20 @@ matplotlib.pyplot.hist（）
 
 以下示例绘制了班级学生得分情况的直方图。其中定义了四个区间（bins）分别是：0-25、26-50、51-75 和 76-100。直方图显示了相应范围的学生人数。
 
-```
-from matplotlib import pyplot as pltimport numpy as np#创建图形对象和轴域对象fig,ax = plt.subplots(1,1)a = np.array([22,87,5,43,56,73,55,54,11,20,51,5,79,31,27])#绘制直方图ax.hist(a, bins = [0,25,50,75,100])#设置坐标轴ax.set_title("histogram of result")ax.set_xticks([0,25,50,75,100])ax.set_xlabel('marks')ax.set_ylabel('no.of students')plt.show()
+```python
+from matplotlib import pyplot as plt
+import numpy as np
+#创建图形对象和轴域对象
+fig,ax = plt.subplots(1,1)
+a = np.array([22,87,5,43,56,73,55,54,11,20,51,5,79,31,27])
+#绘制直方图
+ax.hist(a, bins = [0,25,50,75,100])
+#设置坐标轴
+ax.set_title("histogram of result")
+ax.set_xticks([0,25,50,75,100])
+ax.set_xlabel('marks')
+ax.set_ylabel('no.of students')
+plt.show()
 ```
 
 上述代码执行后，输出结果如下：
@@ -783,8 +1011,20 @@ Matplotlib 提供了一个 pie() 函数，该函数可以生成数组中数据�
 
 以下示例：关于不同计算机语言学习人数的饼状图。autopct 参数设置为 %1.2f% ，并将各项所占总和的百分比显示在相对应的扇形区内。
 
-```
-from matplotlib import pyplot as pltimport numpy as np#添加图形对象fig = plt.figure()ax = fig.add_axes([0,0,1,1])#使得X/Y轴的间距相等ax.axis('equal')#准备数据langs = ['C', 'C++', 'Java', 'Python', 'PHP']students = [23,17,35,29,12]#绘制饼状图ax.pie(students, labels = langs,autopct='%1.2f%%')plt.show()
+```python
+from matplotlib import pyplot as plt
+import numpy as np
+#添加图形对象
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+#使得X/Y轴的间距相等
+ax.axis('equal')
+#准备数据
+langs = ['C', 'C++', 'Java', 'Python', 'PHP']
+students = [23,17,35,29,12]
+#绘制饼状图
+ax.pie(students, labels = langs,autopct='%1.2f%%')
+plt.show()
 ```
 
 输出结果如下：
@@ -804,8 +1044,25 @@ from matplotlib import pyplot as pltimport numpy as np#添加图形对象fig = p
 
 下面示例是关于 xxx语言用户活跃度的折线图：
 
-```
-import matplotlib.pyplot as plt#准备绘制数据x = ["Mon", "Tues", "Wed", "Thur", "Fri","Sat","Sun"]y = [20, 40, 35, 55, 42, 80, 50]# "g" 表示红色，marksize用来设置'D'菱形的大小plt.plot(x, y, "g", marker='D', markersize=5, label="周活")#绘制坐标轴标签plt.xlabel("登录时间")plt.ylabel("用户活跃度")plt.title("xxx语言活跃度")#显示图例plt.legend(loc="lower right")#调用 text()在图像上绘制注释文本#x1、y1表示文本所处坐标位置，ha参数控制水平对齐方式, va控制垂直对齐方式，str(y1)表示要绘制的文本for x1, y1 in zip(x, y):    plt.text(x1, y1, str(y1), ha='center', va='bottom', fontsize=10)#保存图片plt.savefig("1.jpg")plt.show()
+```python
+import matplotlib.pyplot as plt
+#准备绘制数据
+x = ["Mon", "Tues", "Wed", "Thur", "Fri","Sat","Sun"]
+y = [20, 40, 35, 55, 42, 80, 50]
+# "g" 表示红色，marksize用来设置'D'菱形的大小
+plt.plot(x, y, "g", marker='D', markersize=5, label="周活")
+#绘制坐标轴标签
+plt.xlabel("登录时间")
+plt.ylabel("用户活跃度")
+plt.title("xxx语言活跃度")
+#显示图例
+plt.legend(loc="lower right")
+#调用 text()在图像上绘制注释文本#x1、y1表示文本所处坐标位置，ha参数控制水平对齐方式, va控制垂直对齐方式，str(y1)表示要绘制的文本
+for x1, y1 in zip(x, y):    
+    plt.text(x1, y1, str(y1), ha='center', va='bottom', fontsize=10)
+    #保存图片
+plt.savefig("1.jpg")
+plt.show()
 ```
 
 显示结果如下：
@@ -818,8 +1075,25 @@ import matplotlib.pyplot as plt#准备绘制数据x = ["Mon", "Tues", "Wed", "Th
 
 下面是一个简单示例，绘制了两天内同一时刻，天气温度随时间变化的折线图：
 
-```
-import matplotlib.pyplot as plt#对比两天内同一时刻温度的变化情况x = [5, 8, 12, 14, 16, 18, 20]y1 = [18, 21, 29, 31, 26, 24, 20]y2 = [15, 18, 24, 30, 31, 25, 24]#绘制折线图，添加数据点，设置点的大小# * 表示绘制五角星；此处也可以不设置线条颜色，matplotlib会自动为线条添加不同的颜色plt.plot(x, y1, 'r',marker='*', markersize=10)plt.plot(x, y2, 'b', marker='*',markersize=10)plt.title('温度对比折线图')  # 折线图标题plt.xlabel('时间(h)')  # x轴标题plt.ylabel('温度(℃)')  # y轴标题#给图像添加注释，并设置样式for a, b in zip(x, y1):    plt.text(a, b, b, ha='center', va='bottom', fontsize=10)for a, b in zip(x, y2):    plt.text(a, b, b, ha='center', va='bottom', fontsize=10)#绘制图例plt.legend(['第一天', '第二天'])#显示图像plt.show()
+```python
+import matplotlib.pyplot as plt
+#对比两天内同一时刻温度的变化情况
+x = [5, 8, 12, 14, 16, 18, 20]
+y1 = [18, 21, 29, 31, 26, 24, 20]
+y2 = [15, 18, 24, 30, 31, 25, 24]
+#绘制折线图，添加数据点，设置点的大小# * 表示绘制五角星；此处也可以不设置线条颜色，matplotlib会自动为线条添加不同的颜色
+plt.plot(x, y1, 'r',marker='*', markersize=10)
+plt.plot(x, y2, 'b', marker='*',markersize=10)
+plt.title('温度对比折线图')  
+# 折线图标题
+plt.xlabel('时间(h)')  
+# x轴标题
+plt.ylabel('温度(℃)')  
+# y轴标题#给图像添加注释，并设置样式
+for a, b in zip(x, y1):    
+    plt.text(a, b, b, ha='center', va='bottom', fontsize=10)
+for a, b in zip(x, y2):    
+    plt.text(a, b, b, ha='center', va='bottom', fontsize=10)#绘制图例plt.legend(['第一天', '第二天'])#显示图像plt.show()
 ```
 
 显示结果如下：
@@ -836,8 +1110,22 @@ import matplotlib.pyplot as plt#对比两天内同一时刻温度的变化情况
 
 下面示例，绘制了学生考试成绩的散点图，其中蓝色代表男孩成绩，红色表示女孩的成绩。
 
-```
-import matplotlib.pyplot as pltgirls_grades = [89, 90, 70, 89, 100, 80, 90, 100, 80, 34]boys_grades = [30, 29, 49, 48, 100, 48, 38, 45, 20, 30]grades_range = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]fig=plt.figure()#添加绘图区域ax=fig.add_axes([0,0,1,1])ax.scatter(grades_range, girls_grades, color='r',label="girls")ax.scatter(grades_range, boys_grades, color='b',label="boys")ax.set_xlabel('Grades Range')ax.set_ylabel('Grades Scored')ax.set_title('scatter plot')#添加图例plt.legend()plt.show()
+```python
+import matplotlib.pyplot as plt
+girls_grades = [89, 90, 70, 89, 100, 80, 90, 100, 80, 34]
+boys_grades = [30, 29, 49, 48, 100, 48, 38, 45, 20, 30]
+grades_range = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+fig=plt.figure()
+#添加绘图区域
+ax=fig.add_axes([0,0,1,1])
+ax.scatter(grades_range, girls_grades, color='r',label="girls")
+ax.scatter(grades_range, boys_grades, color='b',label="boys")
+ax.set_xlabel('Grades Range')
+ax.set_ylabel('Grades Scored')
+ax.set_title('scatter plot')
+#添加图例
+plt.legend()
+plt.show()
 ```
 
 代码执行后，输出结果如下：
@@ -859,8 +1147,27 @@ import matplotlib.pyplot as pltgirls_grades = [89, 90, 70, 89, 100, 80, 90, 100,
 
 Matplotlib API 提供了绘制等高线（contour）与填充等高线（ contourf）的函数。这两个函数都需要三个参数，分别是 X、Y 与 Z。
 
-```
-import numpy as npimport matplotlib.pyplot as plt#创建xlist、ylist数组xlist = np.linspace(-3.0, 3.0, 100)ylist = np.linspace(-3.0, 3.0, 100)#将上述数据变成网格数据形式X, Y = np.meshgrid(xlist, ylist)#定义Z与X,Y之间的关系Z = np.sqrt(X**2 + Y**2)fig,ax=plt.subplots(1,1)#填充等高线颜色cp = ax.contourf(X, Y, Z)fig.colorbar(cp) # 给图像添加颜色柱ax.set_title('Filled Contours Plot')ax.set_xlabel('x (cm)')ax.set_ylabel('y (cm)')#画等高线plt.contour(X,Y,Z)plt.show()
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+#创建xlist、ylist数组
+xlist = np.linspace(-3.0, 3.0, 100)
+ylist = np.linspace(-3.0, 3.0, 100)
+#将上述数据变成网格数据形式
+X, Y = np.meshgrid(xlist, ylist)
+#定义Z与X,Y之间的关系
+Z = np.sqrt(X**2 + Y**2)
+fig,ax=plt.subplots(1,1)
+#填充等高线颜色
+cp = ax.contourf(X, Y, Z)
+fig.colorbar(cp) 
+# 给图像添加颜色柱
+ax.set_title('Filled Contours Plot')
+ax.set_xlabel('x (cm)')
+ax.set_ylabel('y (cm)')
+#画等高线
+plt.contour(X,Y,Z)
+plt.show()
 ```
 
 代码执行后，输出结果如下：
@@ -897,8 +1204,16 @@ quiver(x,y,u,v)
 
 以下示例，绘制了一个简单的振动图：
 
-```
-import matplotlib.pyplot as pltimport numpy as npx,y = np.meshgrid(np.arange(-2, 2, 0.2), np.arange(-2, 2, 0.25))z = x*np.exp(-x**2 - y**2)#计算数组中元素的梯度v, u = np.gradient(z, 0.2, 0.2)fig, ax = plt.subplots()q = ax.quiver(x,y,u,v)plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+x,y = np.meshgrid(np.arange(-2, 2, 0.2), np.arange(-2, 2, 0.25))
+z = x*np.exp(-x**2 - y**2)
+#计算数组中元素的梯度
+v, u = np.gradient(z, 0.2, 0.2)
+fig, ax = plt.subplots()
+q = ax.quiver(x,y,u,v)
+plt.show()
 ```
 
 上述代码执行后，输出结果如下：
@@ -924,14 +1239,24 @@ import matplotlib.pyplot as pltimport numpy as npx,y = np.meshgrid(np.arange(-2,
 
 首先准备创建箱型图所需数据：您可以使用`numpy.random.normal()`函数来创建一组基于正态分布的随机数据，该函数有三个参数，分别是正态分布的平均值、标准差以及期望值的数量。如下所示：
 
-```
-#利用随机数种子使每次生成的随机数相同np.random.seed(10)collectn_1 = np.random.normal(100, 10, 200)collectn_2 = np.random.normal(80, 30, 200)collectn_3 = np.random.normal(90, 20, 200)collectn_4 = np.random.normal(70, 25, 200)data_to_plot=[collectn_1,collectn_2,collectn_3,collectn_4]
+```python
+#利用随机数种子使每次生成的随机数相同
+np.random.seed(10)
+collectn_1 = np.random.normal(100, 10, 200)
+collectn_2 = np.random.normal(80, 30, 200)
+collectn_3 = np.random.normal(90, 20, 200)
+collectn_4 = np.random.normal(70, 25, 200)
+data_to_plot=[collectn_1,collectn_2,collectn_3,collectn_4]
 ```
 
 然后用 data_to_plot 变量指定创建箱型图所需的数据序列，最后用 boxplot() 函数绘制箱型图，如下所示：
 
-```
-fig = plt.figure()#创建绘图区域ax = fig.add_axes([0,0,1,1])#创建箱型图bp = ax.boxplot(data_to_plot)plt.show()
+```python
+fig = plt.figure() #创建绘图区域
+ax = fig.add_axes([0,0,1,1]) 
+#创建箱型图
+bp = ax.boxplot(data_to_plot)
+plt.show()
 ```
 
 上述代码执行后，输出结果如下：
@@ -953,8 +1278,22 @@ fig = plt.figure()#创建绘图区域ax = fig.add_axes([0,0,1,1])#创建箱型�
 
 小提琴图比箱型图能提供了更多的信息。虽然箱型图显示了均值、中位数和上、下四分位数等统计信息，但是小提琴图却显示了数据的完整分布情况，这更利于数据的分析与比对。下面是小提琴图的使用示例：
 
-```
-import matplotlib.pyplot as pltnp.random.seed(10)collectn_1 = np.random.normal(100, 10, 200)collectn_2 = np.random.normal(80, 30, 200)collectn_3 = np.random.normal(90, 20, 200)collectn_4 = np.random.normal(70, 25, 200)#创建绘制小提琴图的数据序列data_to_plot = [collectn_1, collectn_2, collectn_3, collectn_4]#创建一个画布fig = plt.figure()#创建一个绘图区域ax = fig.add_axes([0,0,1,1])# 创建一个小提琴图bp = ax.violinplot(data_to_plot)plt.show()
+```python
+import matplotlib.pyplot as plt
+np.random.seed(10)
+collectn_1 = np.random.normal(100, 10, 200)
+collectn_2 = np.random.normal(80, 30, 200)
+collectn_3 = np.random.normal(90, 20, 200)
+collectn_4 = np.random.normal(70, 25, 200)
+#创建绘制小提琴图的数据序列
+data_to_plot = [collectn_1, collectn_2, collectn_3, collectn_4]
+#创建一个画布
+fig = plt.figure()
+#创建一个绘图区域
+ax = fig.add_axes([0,0,1,1])
+# 创建一个小提琴图
+bp = ax.violinplot(data_to_plot)
+plt.show()
 ```
 
 输出结果如下：
@@ -978,26 +1317,51 @@ mpl_toolkits 是 Matplotlib 的绘图工具包。
 
 首先创建一个三维绘图区域， plt.axes() 函数提供了一个参数`projection`，将其参数值设置为 "3d"。如下所示：
 
-```
-#导入三维工具包mplot3dfrom mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pltfig = plt.figure()#创建3d绘图区域ax = plt.axes(projection='3d')
+```python
+#导入三维工具包
+mplot3dfrom mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+fig = plt.figure()
+#创建3d绘图区域
+ax = plt.axes(projection='3d')
 ```
 
 有了三维绘图区域，接下来就要构建 3d 图像，如下所示：
 
-```
-#从三个维度构建z = np.linspace(0, 1, 100)x = z * np.sin(20 * z)y = z * np.cos(20 * z)
+```python
+#从三个维度构建
+z = np.linspace(0, 1, 100)
+x = z * np.sin(20 * z)
+y = z * np.cos(20 * z)
 ```
 
 最后调用 plot3D() 方法绘制 3d 图形，代码如下：
 
-```
-#调用 ax.plot3D创建三维线图ax.plot3D(x, y, z, 'gray')ax.set_title('3D line plot')plt.show()
+```python
+#调用 ax.plot3D创建三维线图
+ax.plot3D(x, y, z, 'gray')
+ax.set_title('3D line plot')
+plt.show()
 ```
 
 完整程序如下所示：
 
-```
-from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pltfig = plt.figure()#创建3d绘图区域ax = plt.axes(projection='3d')#从三个维度构建z = np.linspace(0, 1, 100)x = z * np.sin(20 * z)y = z * np.cos(20 * z)#调用 ax.plot3D创建三维线图ax.plot3D(x, y, z, 'gray')ax.set_title('3D line plot')plt.show()
+```python
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+fig = plt.figure()
+#创建3d绘图区域
+ax = plt.axes(projection='3d')
+#从三个维度构建
+z = np.linspace(0, 1, 100)
+x = z * np.sin(20 * z)
+y = z * np.cos(20 * z)
+#调用 ax.plot3D创建三维线图
+ax.plot3D(x, y, z, 'gray')
+ax.set_title('3D line plot')
+plt.show()
 ```
 
 输出结果如下所示：
@@ -1013,8 +1377,20 @@ from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pl
 
 通过 ax.scatter3D() 函数可以绘制 3D 散点图，示例代码如下：
 
-```
-from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pltfig = plt.figure()#创建绘图区域ax = plt.axes(projection='3d')#构建xyzz = np.linspace(0, 1, 100)x = z * np.sin(20 * z)y = z * np.cos(20 * z)c = x + yax.scatter3D(x, y, z, c=c)ax.set_title('3d Scatter plot')plt.show()
+```python
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+fig = plt.figure()
+#创建绘图区域
+ax = plt.axes(projection='3d')
+#构建xyz
+z = np.linspace(0, 1, 100)
+x = z * np.sin(20 * z)
+y = z * np.cos(20 * z)
+c = x + yax.scatter3D(x, y, z, c=c)
+ax.set_title('3d Scatter plot')
+plt.show()
 ```
 
 输出结果图：
@@ -1030,8 +1406,27 @@ ax.contour3D() 可以用来创建三维等高线图，该函数要求输入数�
 
 以下示例展示了如何绘制三维正弦等高线图。代码如下：
 
-```
-from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pltdef f(x, y):   return np.sin(np.sqrt(x ** 2 + y ** 2))#构建x、y数据x = np.linspace(-6, 6, 30)y = np.linspace(-6, 6, 30)#将数据网格化处理X, Y = np.meshgrid(x, y)Z = f(X, Y)fig = plt.figure()ax = plt.axes(projection='3d')#50表示在z轴方向等高线的高度层级，binary颜色从白色变成黑色ax.contour3D(X, Y, Z, 50, cmap='binary')ax.set_xlabel('x')ax.set_ylabel('y')ax.set_zlabel('z')ax.set_title('3D contour')plt.show()
+```python
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+def f(x, y):   
+    return np.sin(np.sqrt(x ** 2 + y ** 2))
+#构建x、y数据
+x = np.linspace(-6, 6, 30)
+y = np.linspace(-6, 6, 30)
+#将数据网格化处理
+X, Y = np.meshgrid(x, y)
+Z = f(X, Y)
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+#50表示在z轴方向等高线的高度层级，binary颜色从白色变成黑色
+ax.contour3D(X, Y, Z, 50,cmap='binary')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+ax.set_title('3D contour')
+plt.show()
 ```
 
 输出结果图如下：
@@ -1047,8 +1442,27 @@ from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pl
 
 线框图可以将数据投影到指定的三维表面上，并输出可视化程度较高的三维效果图。通过 plot_wireframe() 能够绘制 3D 线框图。代码如下：
 
-```
-from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as plt#要绘制函数图像def f(x, y):   return np.sin(np.sqrt(x ** 2 + y ** 2))#准备x,y数据x = np.linspace(-6, 6, 30)y = np.linspace(-6, 6, 30)#生成x、y网格化数据X, Y = np.meshgrid(x, y)#准备z值Z = f(X, Y)#绘制图像fig = plt.figure()ax = plt.axes(projection='3d')#调用绘制线框图的函数plot_wireframe()ax.plot_wireframe(X, Y, Z, color='black')ax.set_title('wireframe')plt.show()
+```python
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+#要绘制函数图像
+def f(x, y):   
+    return np.sin(np.sqrt(x ** 2 + y ** 2))
+#准备x,y数据
+x = np.linspace(-6, 6, 30)
+y = np.linspace(-6, 6, 30)
+#生成x、y网格化数据
+X, Y = np.meshgrid(x, y)
+#准备z值
+Z = f(X, Y)
+#绘制图像
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+#调用绘制线框图的函数plot_wireframe()
+ax.plot_wireframe(X, Y, Z, color='black')
+ax.set_title('wireframe')
+plt.show()
 ```
 
 输出结果如下：
@@ -1064,7 +1478,7 @@ from mpl_toolkits import mplot3dimport numpy as npimport matplotlib.pyplot as pl
 
 3D 曲面图是一个三维图形，它非常类似于线框图。不同之处在于，线框图的每个面都由多边形填充而成。Matplotlib 提供的 plot_surface() 函数可以绘制 3D 曲面图，该函数需要接受三个参数值 x，y 和 z 。示例代码如下：
 
-```
+```python
 from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1076,7 +1490,7 @@ zz = np.cos(x ** 2 + y ** 2)
 #绘制曲面图
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-调用plot_surface()函数
+#调用plot_surface()函数
 ax.plot_surface(x, y, z,cmap='viridis', edgecolor='none')
 ax.set_title('Surface plot')
 plt.show()
@@ -1114,7 +1528,7 @@ TTF（TrueType Font） 是苹果公司和微软公司合作开发的页面描述
 
 Matplotlib 使用`pyplot`模块中的 text() 函数绘制文本，函数的语法格式如下：
 
-```
+```python
 plt.text(x, y, string, weight="bold", color="b")
 ```
 
@@ -1127,8 +1541,31 @@ plt.text(x, y, string, weight="bold", color="b")
 
 下面使用 text() 函数会创建一个文本对象。示例如下：
 
-```
-import matplotlib.pyplot as pltplt.rcParams["font.sans-serif"]=["SimHei"] #设置字体plt.rcParams["axes.unicode_minus"]=False #正常显示负号fig = plt.figure()#添加绘图区域ax = fig.add_axes([0,0,1,1])#设置格式ax.set_title('axes title')ax.set_xlabel('xlabel')ax.set_ylabel('ylabel')# 3,8 表示x，y的坐标点；style设置字体样式为斜体；bbox用来设置盒子的属性，比如背景色ax.text(3, 8, 'xxx语言，xxx', style='italic',bbox = {'facecolor': 'yellow'},fontsize=15)#绘制数学表达式,用$符包裹ax.text(2, 6, r'an equation: $E = mc^2$', fontsize = 15)#添加文字，并设置样式ax.text(4, 0.05, '网址：c.biancheng.net',verticalalignment = 'bottom', color = 'green', fontsize = 15)ax.plot([2], [1], 'o')#xy为点的坐标；xytext为注释内容坐标；arrowprops设置箭头的属性ax.annotate('xxx语言', xy = (2, 1), xytext = (3, 4),arrowprops = dict(facecolor = 'blue', shrink = 0.1))#设置坐标轴x,yax.axis([0, 10, 0, 10])plt.show()
+```python
+import matplotlib.pyplot as plt
+plt.rcParams["font.sans-serif"]=["SimHei"] 
+#设置字体
+plt.rcParams["axes.unicode_minus"]=False 
+#正常显示负号
+fig = plt.figure()
+#添加绘图区域
+ax = fig.add_axes([0,0,1,1])
+#设置格式
+ax.set_title('axes title')
+ax.set_xlabel('xlabel')
+ax.set_ylabel('ylabel')
+# 3,8 表示x，y的坐标点；style设置字体样式为斜体；bbox用来设置盒子的属性，比如背景色
+ax.text(3, 8, 'xxx语言，xxx', style='italic',bbox = {'facecolor': 'yellow'},fontsize=15)
+#绘制数学表达式,用$符包裹
+ax.text(2, 6, r'an equation: $E = mc^2$', fontsize = 15)
+#添加文字，并设置样式
+ax.text(4, 0.05, '网址：c.biancheng.net',verticalalignment = 'bottom', color = 'green', fontsize = 15)
+ax.plot([2], [1], 'o')
+#xy为点的坐标；xytext为注释内容坐标；arrowprops设置箭头的属性
+ax.annotate('xxx语言', xy = (2, 1), xytext = (3, 4),arrowprops = dict(facecolor = 'blue', shrink = 0.1))
+#设置坐标轴x,y
+ax.axis([0, 10, 0, 10])
+plt.show()
 ```
 
 # Matplotlib数学表达式
@@ -1139,15 +1576,30 @@ import matplotlib.pyplot as pltplt.rcParams["font.sans-serif"]=["SimHei"] #设�
 
 Matplotlib 中的文本字符串都可以使用 Text Markup（一种文本标记语言）显现出来，具体的使用方法是将文本标记符放在一对美元符号`$`内，语法格式如下：
 
-```
+```python
 #数学表达式
 plt.title(r'$\alpha > \beta$')
 ```
 
 如果要绘制下标和上标，您需要使用`'_'`和`'^'`符号，下面是一个简单的示例：
 
-```
-#绘制表达式 r'$\alpha_i> \beta_i$'import numpy as npimport matplotlib.pyplot as pltt = np.arange(0.0, 2.0, 0.01)s = np.sin(2*np.pi*t)#绘制函数图像plt.plot(t,s)#设置标题plt.title(r'$\alpha_i> \beta_i$', fontsize=20)#设置数学表达式plt.text(0.6, 0.6, r'$\mathcal{A}\mathrm{sin}(2 \omega t)$', fontsize = 20)#设置数学表达式plt.text(0.1, -0.5, r'$\sqrt{2}$', fontsize=10)plt.xlabel('time (s)')plt.ylabel('volts (mV)')plt.show()
+```python
+#绘制表达式 r'$\alpha_i> \beta_i$'
+import numpy as np
+import matplotlib.pyplot as plt
+t = np.arange(0.0, 2.0, 0.01)
+s = np.sin(2*np.pi*t)
+#绘制函数图像
+plt.plot(t,s)
+#设置标题
+plt.title(r'$\alpha_i> \beta_i$', fontsize=20)
+#设置数学表达式
+plt.text(0.6, 0.6, r'$\mathcal{A}\mathrm{sin}(2 \omega t)$', fontsize = 20)
+#设置数学表达式
+plt.text(0.1, -0.5, r'$\sqrt{2}$', fontsize=10)
+plt.xlabel('time (s)')
+plt.ylabel('volts (mV)')
+plt.show()
 ```
 
 上面代码的输出结果：
@@ -1160,8 +1612,6 @@ Matplotlib数学表达式绘制
 从上述示例可以看出，虽然数学表达式种类繁多，但是 Matplotlib 对各种数学符号都做了良好的支持。
 
 # Matplotlib image图像处理
-
-[< 上一节](https://c.biancheng.net/matplotlib/math-express.html)[下一节 >](https://c.biancheng.net/matplotlib/transform-object.html)
 
 
 
@@ -1199,8 +1649,34 @@ imgplot = plt.imshow(img)
 
 下面列举一组示例：
 
-```
-import matplotlib.pyplot as pltimport numpy as npfig=plt.figure()ax1=fig.add_subplot(221)ax2=fig.add_subplot(222)ax3=fig.add_subplot(223)ax4=fig.add_subplot(224)#准备数据#绘制z = sqrt(x^2+y^2)图像points=np.arange(-5,5,0.01)# meshgrid 接受两个一维数组，然后产生两个二维矩阵xs,ys=np.meshgrid(points,points)#绘制图像z=np.sqrt(xs**2+ys**2)ax = fig.add_subplot(221)#默认ax.imshow(z)ax = fig.add_subplot(222)ax.imshow(z,cmap = "gray")ax = fig.add_subplot(223)ax.imshow(z,cmap="cool")ax = fig.add_subplot(224)ax.imshow(z,cmap="hot")#显示图像plt.show()
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+fig=plt.figure()
+ax1=fig.add_subplot(221)
+ax2=fig.add_subplot(222)
+ax3=fig.add_subplot(223)
+ax4=fig.add_subplot(224)
+#准备数据
+#绘制
+z = sqrt(x^2+y^2)
+#图像
+points=np.arange(-5,5,0.01)
+# meshgrid 接受两个一维数组，然后产生两个二维矩阵
+xs,ys=np.meshgrid(points,points)
+#绘制图像
+z=np.sqrt(xs**2+ys**2)
+ax = fig.add_subplot(221)
+#默认
+ax.imshow(z)
+ax = fig.add_subplot(222)
+ax.imshow(z,cmap = "gray")
+ax = fig.add_subplot(223)
+ax.imshow(z,cmap="cool")
+ax = fig.add_subplot(224)
+ax.imshow(z,cmap="hot")
+#显示图像
+plt.show()
 ```
 
 输出结果如下：
@@ -1237,9 +1713,9 @@ Matplotlib 是一款轻量级的图形转换框架，它通过转换对象轻松
 
 下面举一个简单的示例，现有文本“my text”放置在数据点 (x,y) 位置处：
 
-axes.text(x,y,"my text") 
+`axes.text(x,y,"my text") `
 
 通过 Axes 转换对象，我们可以指定文本的位置。使用以下代码，将文本移动至在坐标系的中心位置：
 
-axes.text(0.5, 0.5, "middle of graph", transform=axes.transAxes)
+`axes.text(0.5, 0.5, "middle of graph", transform=axes.transAxes)`
 
