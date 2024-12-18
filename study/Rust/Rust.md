@@ -1317,6 +1317,22 @@ fn main() {
 
 - 如果类型不是`Option<T>` 那么就认为该值是一个有效值，否则则需要自行处理转为`T`类型
 
+- `take` 方法
+
+    - 消耗原 `Option` 的值
+    - 将原 `Option` 设为 `None`
+    - 返回被取出的值的 `Option`
+
+
+```rust
+let mut option = Some(String::from("hello"));
+let value = option.take();
+// option 现在是 None
+// value 是 Some("hello")
+```
+
+
+
 
 
 ### 模式匹配（match）
@@ -2528,7 +2544,8 @@ enum Result<T, E> {
     - main 函数的返回类型也可以是：`Result<T, E>`
     - `Box<dyn std::error:Error>` 是trait 对象
       - 可以理解为任何肯的错误类型
-
+      - `dyn`（德来米）
+    
     ```rust
     use std::fs::File;
     
@@ -4972,6 +4989,7 @@ add-one = { path = "../add-one" }
   - 没有性能开销
   - 没有其他额外功能
   - 实现了 `Deref trait` 和 `Drop trait`
+- `Box<dyn MyTrait>` 表示所有实现 `MyTrait` `trait` 的类型
 - 使用场景
   - 在编译时，某个类型的大小无法确定。但使用该类型时，上下文却需要知道它的确切大小
   - 当你有大量数据，想移交所有权，但需要确保在操作时数据不会被复制
@@ -5893,6 +5911,663 @@ fn main() {
     for msg in rx {
         println!("{}", msg);
     }
+}
+```
+
+
+
+### 共享状态的并发
+
+#### 使用共享来实现并发
+
+- Go 语言名言：==不要用共享内存来通信==，要用通信来共享内存。
+- Rust 支持通过共享状态来实现并发。
+- `Channel` 类似单所有权：一旦将值的所有权转移至 `Channel`，就无法继续使用它
+
+#### 使用 `Mutex` 来保证每次只允许一个线程来访问数据
+
+- `Mutex` 是 `mutual exclusion` （互斥锁）的简写
+- 在同一时刻，`Mutex` 只允许一个线程来访问某些数据
+- 访问数据
+    - 线程必须先获取互斥锁（lock）
+        - `lock` 数据结构是 `mutex` 的一部分，它能跟踪谁对数据拥有独占访问权
+    - `mutex` 通常被描述为：通过锁定系统来保护它所持有的数据
+
+
+
+#### `Mutex` 的两条规则
+
+- 在使用数据之前，必须尝试获取锁（lock）
+- 使用完 `mutex` 所保护的数据，必须对数据进行解锁，以便其他线程可以获取锁
+
+#### `Mutext<T>` 的 API
+
+- 通过 `Mutex::new(Data)` 来创建 `Mutex<T>`
+    - `Mutex<T>` 是一个智能指针
+- 访问数据前，通过 `lock` 方法获取锁
+    - 会阻塞当前线程
+    - `lock` 肯会失败
+    - 返回的是 `MutexGuard` （智能指针，实现了 `Deref` 和 `Drop`）
+
+```rust
+use std::sync::Mutex;
+
+fn main() {
+    let m = Mutex::new(5);
+    {
+        let mut num = m.lock().unwrap();
+        *num = 6;
+    }
+    println!("m = {:?}", m);
+}
+```
+
+
+
+#### 使用 `Arc<T>` 来进行原子引用计数
+
+- `Arc<T>` 和 `Rc<T>` 类似，它可以用于并发场景
+    - A: `atomic` ：原子的
+- 需要牺牲性能为代价才能使用
+- `Arc<T>` 和 `Rc<T>` 的 API 是相同的
+
+
+
+#### 多线程共享 `Mutex<T>`
+
+```rust
+use std::sync::{Mutex, Arc};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
+            let mut num = counter.lock().unwrap();
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    println!("Result: {}", *counter.lock().unwrap());
+}
+```
+
+
+
+#### `RefCell<T>` / `Rc<T>` VS `Mutex<T>` / `Arc<T>`
+
+- `Mutex<T>` 提供了内部可变性，和 `Cell` 家族一样
+- 使用 `RefCell<T>` 来改变 `Rc<T>` 里面的内容
+- 使用 `Mutex<T>` 来改变 `Arc<T>` 里面的内容
+- 注意：`Mutex<T>` 有死锁的风险
+
+
+
+### 通过 `Send` 和 `Sync` Trait 来拓展并发
+
+- Rust 语言的并发特性较少，目前的并发都来自标准库（而不是语言本身）
+- 无需局限于标准库的并发，可以自己实现并发
+- 在 Rust 语言中有两个并发概念
+    - `std::marker::Sync` 和 `std::marker::Send` 这两个 Trait
+
+#### `Send` ：允许线程间转移所有权
+
+- 实现 `Send trait` 的类型可在线程间转移所有权
+- Rust 中几乎所有类型都实现了 `Send`
+    - 但 `Rc<T>` 没有实现 `Send`，它只用于单线程场景
+- 任何完全由 `Send` 类型组成的类型也被标记为 `Send`
+- 除了原始指针之外，几乎所有类型都是 `Send`
+
+
+
+#### `Sync` ：允许从多线程访问
+
+- 实现 `Sync` 的类型可以安全的被多个现场引用
+- 如果 `T` 是 `Sync` ，那么 `&T` 就是 `Send`
+    - 引用可以被安全的送往另一个线程
+- 基础类型都是 `Sync`
+- 完全由 `Sync` 类型组成的类型也是 `Sync`
+    - `Rc<T>` 不是 `Sync` 的
+    - `RefCell<T>` 和 `Cell<T>` 家族也不是 `Sync` 的
+    - `Mutex<T>` 是 `Sync` 的
+
+
+
+> 手动实现 `Send` 和 `Sync` 是不安全的，需要特别严谨才能确保安全性
+
+
+
+## 二十八、面向对象编程特性
+
+### 面向对象语言的特性
+
+#### Rust 是面向对象编程语言吗？
+
+- Rust 受到多种编程范式的影响，包括面向对象
+- 面向对象通常包含以下特性：命名对象、封装、继承
+
+
+
+#### 对象包含数据和行为
+
+- “设计模式四人帮” 在 《设计模式》 中给面向对象的定义：
+    - 面向对象的程序由对象组成
+    - 对象包装了数据和操作这些数据的过程，这些过程通常被称做方法或操作
+- 基于此定义：Rust 是面向对象的
+    - `struct` 、 `enum` 包含数据
+    - `impl` 块为之提供了方法
+    - 但带有方法的 `struct` 、 `enum` 并没有称为对象
+
+
+
+#### 封装
+
+> 调用对象外部的代码无法直接访问对象内部的实现细节，唯一可以与独秀想进行交互的方法就是通过它公开的 API
+
+- Rust：`pub` 关键字
+
+```rust
+pub struct AveragedCollection {
+    list: Vec<i32>,
+    average: f64,
+}
+
+impl AveragedCollection {
+    pub fn new() -> Self {
+        AveragedCollection {
+            list: vec![],
+            average: 0.0,
+        }
+    }
+
+    pub fn add(&mut self, value: i32) {
+        self.list.push(value);
+        self.update_average();
+    }
+
+    pub fn remove(&mut self) -> Option<i32> {
+        let result = self.list.pop();
+        match result {
+            None => None,
+            Some(value) => {
+                self.update_average();
+                Some(value)
+            }
+        }
+    }
+    pub fn average(&self) -> f64 {
+        self.average
+    }
+
+    fn update_average(&mut self) {
+        let total: i32 = self.list.iter().sum();
+        self.average = total as f64 / self.list.len() as f64;
+    }
+}
+```
+
+
+
+#### 继承
+
+> 使对象可以沿用另外一个对象的数据和行为，且无需重复定义相关代码
+
+- Rust：没有继承
+- 使用继承的原因
+    - 代码复用
+        - Rust：默认 `trait` 方法来进行代码共享
+    - 多态
+        - Rust：泛型和 `trait` 约束（限定参数化多态 `bounded parametric`）
+- 很多新语言都不适用继承作为内置的程序设计方案
+
+
+
+### 使用 `trait` 对象来存储不同类型的值
+
+> 创建一个 GUI 工具
+>
+> - 他会遍历某个元素的列表，依次调用元素的 `draw` 方法进行绘制
+> - 例如：`Button`、`TextField` 等元素
+
+
+
+面向对象语言中：
+
+- 定义一个父类 `Component` 父类，里面定义了 `draw` 方法
+- 定义 `Button`、`TextField` 等类，继承自 `Component` 类
+
+
+
+#### 为共有行为定义一个 `trait`
+
+- Rust 避免将 `struct` 或 `enum` 称为对象，因为他们与 `impl` 块是分开的
+- `trait` 对象有些类似与其他语言中的对象
+    - 它们某种程度上组合了数据与行为
+- `trait` 对象与传统对象不同的地方
+    - 无法为 `trait` 对象添加数据
+- `trait` 对象被专门用于抽象某些共有行为，它没其它语言中的对象那么通用
+
+```rust
+// 使用 trait 配合 Box 分配内存，dyn 来表示实现trait的类型（动态）
+pub trait Draw {
+    fn draw(&self);
+}
+pub struct Screen {
+    pub components: Vec<Box<dyn Draw>>,
+}
+
+impl Screen {
+    pub fn run(&self) {
+        for component in self.components.iter() {
+            component.draw();
+        }
+    }
+}
+
+// 使用泛型只能表示一种，例如当T为Button时只能放入Button
+/**
+pub struct Screen<T: Draw> {
+    pub components: Vec<T>,
+}
+
+impl <T> Screen<T>
+where
+    T: Draw,
+{
+    pub fn run(&self) {
+        for component in self.components.iter() {
+            component.draw();
+        }
+    }
+}
+**/
+```
+
+
+
+#### `Trait` 对象执行的是动态派发
+
+- 将 `trait` 约束作用域泛型时，Rust编译器会执行单态化
+    - 编译器会为我们用来替换泛型类型参数的每一个具体类型生成对应函数和方法的非泛型实现
+- 通过单态化生成的代码会执行静态派发（`static dispatch`），在编译过程中确定调用的具体方法
+- 动态派发（`dynamic dispatch`）
+    - 无法在编译过程中确定你调用的究竟是哪一种方法
+    - 编译器会产生额外的代码一边在允许时找出希望调用的方法
+- 使用 `trait` 对象，会执行动态派发
+    - 产生运行时开销
+    - 阻止编译器内联方法代码，是的部分优化操作无法进行
+
+
+
+#### `Trait` 对象必须保证对象安全
+
+- 只能把满足对象安全（`object-safe`）的 `trait` 转化为 `trait` 对象
+- Rust 采用一系列规则来判定某个对象是否安全，只需记住两条规则
+    - 方法返回类型不是 `Self`
+    - 方法中不包含任何泛型类型参数
+
+```rust
+pub trait Clone {
+    fn clone(&self) -> Self;
+}
+
+pub struct Screen {
+    pub component: Vec<Box<dyn Clone>>, // [!code error] 此时 Clone 不是安全的 Trait 所以无法使用 dyn Clone
+}
+
+```
+
+
+
+### 实现面向对象的设计模式
+
+#### 状态模式
+
+> `state pattern` 是一种面向对象设计模式，一个值拥有的内部状态有数个状态对象（`state object`）表达而成，而值的行为则随着内部状态的改变而改变
+
+使用状态模式意味着
+
+- 业务需求变化时，不需要修改持有状态的值的代码，或使用这个值的代码
+- 只需要更新对象内部的代码，一边改变其规则，或者增加一些新的状态对象
+
+```rust
+// lib.rs
+trait State {
+    fn request_review(self: Box<Self>) -> Box<dyn State>;
+    fn approve(self: Box<Self>) -> Box<dyn State>;
+    fn content<'a>(&self, post: &'a Post) -> &'a str {
+        ""
+    }
+}
+
+struct Draft {}
+
+impl State for Draft {
+    fn request_review(self: Box<Self>) -> Box<dyn State> {
+        Box::new(PendingReview {})
+    }
+    fn approve(self: Box<Self>) -> Box<dyn State> {
+        self
+    }
+}
+
+struct PendingReview {}
+
+impl State for PendingReview {
+    fn request_review(self: Box<Self>) -> Box<dyn State> {
+        self
+    }
+    fn approve(self: Box<Self>) -> Box<dyn State> {
+        Box::new(Published {})
+    }
+}
+
+struct Published {}
+
+impl State for Published {
+    fn request_review(self: Box<Self>) -> Box<dyn State> {
+        self
+    }
+    fn approve(self: Box<Self>) -> Box<dyn State> {
+        self
+    }
+    fn content<'a>(&self, post: &'a Post) -> &'a str {
+        &post.content
+    }
+}
+
+pub struct Post {
+    state: Option<Box<dyn State>>,
+    content: String,
+}
+
+impl Post {
+    pub fn new() -> Post {
+        Post {
+            state: Some(Box::new(Draft {})),
+            content: String::new(),
+        }
+    }
+    pub fn add_text(&mut self, text: &str) {
+        // 在当前内容上添加内容
+        self.content.push_str(text);
+    }
+    pub fn content(&self) -> &str {
+        // 调用 trait 上的 content 之后发布后才有内容
+        self.state.as_ref().unwrap().content(&self)
+    }
+    pub fn request_review(&mut self) {
+        // take 获取值并将 self.state 的值设置为 None 便于重置值
+        if let Some(s) = self.state.take() {
+            self.state = Some(s.request_review())
+        }
+    }
+
+    pub fn approve(&mut self) {
+        // take 获取值并将 self.state 的值设置为 None 便于重置值
+        if let Some(s) = self.state.take() {
+            self.state = Some(s.approve())
+        }
+    }
+}
+```
+
+
+
+```rust
+// main.rs
+use demo::Post;
+
+fn main() {
+    let mut post = Post::new();
+    post.add_text("I ate a salad for lunch today!");
+    assert_eq!("", post.content());
+
+    post.request_review();
+    assert_eq!("", post.content());
+	// 未发布没有内容
+    post.approve();
+    assert_eq!("I ate a salad for lunch today!", post.content());
+    println!("完成!");
+}
+```
+
+
+
+#### 状态模式的取舍权衡
+
+- 缺点
+    - 状态之间的代码是相互耦合的
+    - 需要重复实现一些逻辑代码
+
+
+
+#### 将状态和行为编码为类型
+
+- 将状态编码为不同的类型
+    - Rust 类型检查系统会通过编译时错误来阻止用户使用无效的状态
+
+```rust
+// lib.rs
+pub struct Post {
+    content: String,
+}
+
+pub struct DraftPost {
+    content: String,
+}
+
+impl Post {
+    pub fn new() -> DraftPost {
+        DraftPost {
+            content: String::new(),
+        }
+    }
+
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+}
+
+impl DraftPost {
+    pub fn add_text(&mut self, text: &str) {
+        self.content.push_str(text);
+    }
+
+    pub fn request_review(&mut self) -> PendingReviewPost {
+        PendingReviewPost {
+            content: self.content.to_string(),
+        }
+    }
+}
+
+pub struct PendingReviewPost {
+    content: String,
+}
+
+impl PendingReviewPost {
+    pub fn approve(self) -> Post {
+        Post {
+            content: self.content,
+        }
+    }
+}
+```
+
+
+
+```rust
+// main.rs
+use demo::{DraftPost, PendingReviewPost, Post};
+
+fn main() {
+    let mut post: DraftPost = Post::new();
+    post.add_text("I ate a salad for lunch today!");
+
+    let post: PendingReviewPost = post.request_review();
+
+    let post: Post = post.approve();
+    assert_eq!("I ate a salad for lunch today!", post.content());
+    println!("完成!");
+}
+```
+
+
+
+#### 总结
+
+- Rust 不仅能实现面向对象的设计模式，还可以支持更多的模式
+- 例如状态和行为编码为状态
+- 面向对象的经典模式并不总是 Rust 编程实践中的最佳选择，因为 Rust 具有所有权等其他面向对象语言没有实现的特性
+
+
+
+## 二十九、模式匹配
+
+> Rust 中的一种特殊语法，用于匹配负责和简单数据结构
+>
+> 将模式与匹配表达式和其他构造结合使用，可以更好的控制程序的控制流
+
+ 模式由以下元素（的一些组合）组成
+
+- 字面量
+- 解构的数组、`enum`、`struct` 和 `tuple`
+- 变量
+- 通配符
+- 占位符
+
+想要使用模式，需要将其与某个值进行比较
+
+- 如果模式匹配，就可以在代码中使用这个值的相应部分
+
+
+
+### 用到模式的地方
+
+#### `match` 的 `Arm`（分支）
+
+- `match` 表达式的要求
+    - 详尽（包含所有可能性）
+- 特色的模式 `_` （下划线）
+    - 他会匹配任何东西
+    - 不会绑定到变量
+    - 通常用于 `match` 的最后一个分支，或用于忽略某些值
+
+```rust
+match Value {
+    pattern => expression,
+    pattern => expression,
+    pattern => expression,
+}
+```
+
+
+
+#### 条件 `if let` 表达式
+
+> `if let` 表达式主要是作为一种简短的方式来等价的代替只有一个匹配项的 `match`
+>
+> `if let` 可选的可以拥有 `else`，包括：
+>
+> - `else if`
+> - `else if let`
+>
+> 但 `if let` 不会加内存穷尽性
+
+```rust
+fn main() {
+    let favorite_color: Option<&str> = None;
+    let is_tuesday = false;
+    let age: Result<u8, _> = "34".parse();
+
+    if let Some(color) = favorite_color {
+        println!("Using your favorite color, {}, not today", color);
+    } else if is_tuesday {
+        println!("Today is Green");
+    } else if let Ok(age) = age {
+        if age > 30 {
+            println!("Using default color");
+        } else {
+            println!("Using default color");
+        }
+    } else { 
+        println!("Using default color");
+    }
+}
+```
+
+
+
+#### `while let` 条件循环
+
+> 只要模式满足匹配条件，那它允许 `while` 循环一直运行
+
+```rust
+fn main() {
+    let mut stack = Vec::new();
+    stack.push(1);
+    stack.push(2);
+    stack.push(3);
+    while let Some(top) = stack.pop() {
+        println!("{}", top)
+    }
+}
+```
+
+
+
+#### `for` 循环
+
+> `for` 循环中模式就是紧随 `for` 关键字后的值
+
+```rust
+fn main() {
+    let v = vec![1, 2, 3,4, 5];
+    for (index, value) in v.iter().enumerate() {
+        println!("{} {}", index, value);
+    }
+}
+```
+
+
+
+#### `let` 语句
+
+> `let` 语句也是模式
+>
+> `let pattern = expression`
+
+```rust
+fn main() {
+    let v = (1, 2, 3, 4, 5);
+    let (a, b, c, d, e) = v;
+}
+```
+
+
+
+#### 函数参数
+
+> 函数参数也可以是模式
+
+```rust
+fn foo(x: i32) {
+    println!("Hello, world!");
+}
+
+fn print_coordinates(&(x, y): &(i32, i32)) {
+    println!("The point is at {}, {}", x, y);
+}
+
+fn main() {
+    let point = (3, 5);
+    print_coordinates(&point);
 }
 ```
 
