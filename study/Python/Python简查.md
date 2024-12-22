@@ -1,5 +1,59 @@
 # Python 技巧与库
 
+# Requests-HTML：可以渲染Js的模块
+
+> 它不光继承了Requests的简洁设计，还自带JavaScript渲染和XPath解析。
+
+`pip install requests-html`
+
+### 获取网页所有链接
+
+```python
+from requests_html import HTMLSession
+session = HTMLSession()
+r = session.get('http://python.org')
+print(r.html.links)  # 轻松获取页面所有链接
+```
+
+### Js渲染
+
+```python
+from requests_html import HTMLSession
+session = HTMLSession()
+r = session.get('http://example.com')
+r.html.render()  # 等待JS执行完成
+# 获取动态加载的数据
+results = r.html.find('#dynamic-content')
+```
+
+### CSS选择器和XPath
+
+```python
+from requests_html import HTMLSession
+session = HTMLSession()
+r = session.get('http://books.toscrape.com')
+# CSS选择器
+prices = r.html.find('p.price_color')
+# XPath也行
+titles = r.html.xpath('//h3/a/text()')
+```
+
+### 协程异步操作
+
+```python
+import asyncio
+from requests_html import AsyncHTMLSession
+async def get_pages():
+asession = AsyncHTMLSession()
+r = await asession.get('http://python.org')
+return r
+results = asyncio.run(get_pages())
+
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy()) # Windows 事件循环报错时指定 // [!code warning]
+```
+
+
+
 ## 绕过 cloudflare 人机验证
 
 > Cloudflare 的人机验证（通常指的是 CAPTCHA 或 JavaScript挑战）是为了帮助网站或服务区分真实用户和恶意机器人（例如爬虫、攻击者等）而设计的一种安全措施。Cloudflare
@@ -35,7 +89,7 @@ arguments = [
     "-disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
     "-deny-permission-prompts",
     "-disable-gpu",
-    "-accept-lang=zh-CN", 根据网站选择支持的地区 // [!code warning]
+    "-accept-lang=zh-CN", # 根据网站选择支持的地区 // [!code warning]
     "--guest"
 ]
 for arg in arguments:

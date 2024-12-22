@@ -688,6 +688,76 @@ docker inspect id
 USER root
 ```
 
+
+
+### 完整Dockerfile指令示例
+
+```dockerfile
+# 使用基础镜像
+FROM ubuntu:20.04
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置环境变量
+ENV NODE_ENV production
+
+# 复制当前目录下的所有文件到容器中的/app目录下
+COPY . /app
+
+# 添加一个文件到容器中的指定路径
+ADD example.tar.gz /app/data/
+
+# 解压文件
+RUN tar -xzf example.tar.gz -C /app/data/
+
+# 更新软件包列表并安装软件
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装Python依赖
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# 设置一个卷，允许从容器中挂载数据
+VOLUME ["/app/data"]
+
+# 暴露端口
+EXPOSE 8080
+
+# 定义一个参数
+ARG some_variable
+ENV SOME_VARIABLE=$some_variable
+
+# 设置健康检查
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:8080 || exit 1
+
+# 指定容器启动时执行的命令
+CMD ["python3", "app.py"]
+
+# 指定容器启动时执行的命令（覆盖CMD）
+ENTRYPOINT ["python3", "-u", "app.py"]
+
+# 设置用户
+USER appuser
+
+# 在容器启动前运行的命令
+ONBUILD RUN echo "On build command executed"
+
+# 指定shell格式的命令
+SHELL ["/bin/bash", "-c"]
+
+# 定义一个信号处理器
+STOPSIGNAL SIGTERM
+
+# 设置容器的默认工作目录
+WORKDIR /app
+```
+
+
+
 ## Docker Compose
 
 > Compose 是用于定义和运行多容器 Docker 应用程序的工具。通过 Compose，您可以使用 YML 文件来配置应用程序需要的所有服务。然后，使用一个命令，就可以从
