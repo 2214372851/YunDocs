@@ -1,6 +1,96 @@
 # Python 技巧与库
 
-# Requests-HTML：可以渲染Js的模块
+
+
+## `map` 函数详解
+
+### 基本用法
+
+`map(function, iterables, ...)`
+
+-  `function`：要应用的函数，可以是内置函数、自定义函数或 lambda 表达式
+-  `iterable`：一个或多个可迭代对象（列表、元组、字符串等）
+- 返回值：返回一个 map 对象（迭代器）
+
+### 单参数函数映射
+
+```python
+# 使用普通函数
+def square(x):
+    return x ** 2
+
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(square, numbers))
+print(squared)  # 输出: [1, 4, 9, 16, 25]
+
+# 使用 lambda 表达式（更简洁）
+cubed = list(map(lambda x: x ** 3, numbers))
+print(cubed)    # 输出: [1, 8, 27, 64, 125]
+```
+
+
+
+### 多参数函数映射
+
+map 可以同时处理多个序列，函数会依次接收来自每个序列的对应参数：
+
+```python
+# 多序列运算示例
+list1 = [1, 2, 3, 4]
+list2 = [10, 20, 30, 40]
+list3 = [100, 200, 300, 400]
+
+# 计算三个数的加权平均
+def weighted_sum(x, y, z):
+    return (x * 0.3 + y * 0.3 + z * 0.4)
+
+result = list(map(weighted_sum, list1, list2, list3))
+print(result)  # 输出: [43.3, 86.6, 129.9, 173.2]
+```
+
+
+
+### 惰性求值
+
+map 返回的是迭代器，具有惰性求值的特性。这意味着只有在实际需要结果时才会进行计算：
+
+```python
+# 创建一个大数列表
+numbers = range(1, 1000000)
+
+# 这一步不会立即计算
+mapped = map(lambda x: x ** 2, numbers)
+
+# 只有在使用结果时才会计算
+for i in mapped:
+    if i > 100:
+        print(f"First number > 100 is: {i}")
+        break
+```
+
+
+
+### 内存效率
+
+由于惰性求值的特性，map 特别适合处理大数据集：
+
+```python
+# 处理大文件示例
+def process_line(line):
+    return line.strip().upper()
+
+with open('large_file.txt', 'r') as file:
+    # 不会一次性读入所有行
+    processed_lines = map(process_line, file)
+    # 逐行处理以节省内存
+    for line in processed_lines:
+        # 处理每一行...
+        pass
+```
+
+
+
+## Requests-HTML：可以渲染Js的模块
 
 > 它不光继承了Requests的简洁设计，还自带JavaScript渲染和XPath解析。
 
