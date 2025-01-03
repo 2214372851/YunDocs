@@ -24,8 +24,10 @@
 
 .vp-doc blockquote {
     border-left: 4px solid #326CE5;
+    padding: 8px 10px;
     background-color: rgb(50, 108, 229, .2);
     color: #3C3C43;
+    border-radius: 8px;
 }
 
 .dark {
