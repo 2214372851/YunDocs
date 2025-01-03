@@ -63,6 +63,16 @@ export default withMermaid({
         sidebar: {
             '/modules': [
                 {
+                    text: 'Crawlsy',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: '简介',
+                            link: '/modules/crawlsy'
+                        }
+                    ]
+                },
+                {
                     text: 'Yun Download',
                     collapsed: true,
                     items: [
@@ -76,6 +86,26 @@ export default withMermaid({
                         }
                     ]
                 },
+                {
+                    text: 'Crawlsy Spider',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: '简介',
+                            link: '/modules/crawlsy-spider'
+                        }
+                    ]
+                },
+                {
+                    text: 'D0 Tools',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: 'Github',
+                            link: 'https://github.com/2214372851/D0-Tools'
+                        }
+                    ]
+                }
             ],
             '/study': [
                 {
@@ -115,6 +145,7 @@ export default withMermaid({
                         {text: 'jQuery', link: '/study/Web/jQuery'},
                         {text: 'TypeScript', link: '/study/Web/TypeScript'},
                         {text: 'Vue', link: '/study/Web/Vue'},
+                        {text: 'Vue简查', link: '/study/Web/Vue简查'},
                     ]
                 },
                 {

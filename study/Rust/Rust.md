@@ -2779,7 +2779,7 @@ enum Option_f64 {
 
 - 某种类型具有哪些并且可以与其它类型共享的功能
 
-`Trait` 凑想的定义共享行为
+`Trait` 抽象的定义共享行为
 
 `Trait bounds` （约束） 泛型类型参数指定为实现了特定行为的类型
 
@@ -6571,3 +6571,597 @@ fn main() {
 }
 ```
 
+
+
+### 可辩驳性：模式是否会无法匹配
+
+- 模式有两种形式：可辩驳的、无可辩驳的
+- 能匹配任何可能传递的值的模式：无可辩驳的
+    - 例如 `let x = 5;`
+- 对某些可能的值，无法进行匹配的模式：可辩驳的
+    - 例如：`if ley Some(x) = a_value;`
+
+
+
+### 模式语法
+
+#### 匹配字面值
+
+> 模式可以直接匹配字面值
+
+```rust
+fn main() {
+    let x = 1;
+
+    match x {
+        1 => println!("x is1"),
+        2 => println!("x is 2"),
+        _ => println!("x is something else"),
+    }
+}
+```
+
+
+
+#### 匹配命名变量
+
+> 命名的变量是可匹配任何值的无可辩驳模式
+
+```rust
+fn main() {
+    let x = Some(5);
+    let y = 10;
+
+    match x {
+        Some(50) => println!("Got a Some(50)"),
+        Some(y) => println!("Matched, y = {:?}", y),
+        _ => println!("Got something"),
+    }
+
+    println!("at the end: x = {:?}, y = {:?}", x, y)
+}
+```
+
+
+
+### 多重模式
+
+> 在 `match` 表达式中，使用 `|` 语法（就是或的意思），可以匹配多种模式
+
+```rust
+fn main() {
+    let x = 1;
+
+    match x {
+        1 | 2 => println!("x is 1 or 2"),
+        3 => println!("x is 3"),
+        _ => println!("x is something else"),
+    }
+}
+```
+
+
+
+### 使用 `..=` 来匹配某个范围的值
+
+```rust
+fn main() {
+    let x = 1;
+
+    match x {
+        1..=5 => println!("x is 1 in 5"),
+        _ => println!("x is something else"),
+    }
+
+    let x = 'c';
+    match x {
+        'a'..='z' => println!("x is a letter"),
+        _ => println!("x is something else"),
+    }
+}
+```
+
+
+
+### 解构以分解值
+
+> 可以使用模式来解构 `struct`、`enum`、`tuple`，从而引用这些类型值的不同部分
+
+
+
+#### 解构 struct
+
+```rust
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let p = Point { x: 1, y: 2 };
+
+    let Point { x: a, y: b } = p;
+    println!("{} | {}", a, b);
+
+    let Point { x, y } = p;
+    println!("{} | {}", x, y);
+
+    match p {
+        Point { x, y: 0 } => {
+            println!("{} | {}", x, y);
+        }
+        Point { x: 0, y } => {
+            println!("{} | {}", x, y);
+        }
+        Point { x, y } => println!("On neither axis: ({}, {})", x, y),
+    }
+}
+```
+
+
+
+#### 解构 enum
+
+```rust
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32, i32),
+}
+fn main() {
+    let msg = Message::ChangeColor(0, 255, 255, 0);
+    match msg {
+        Message::Quit => {
+            println!("quit");
+        }
+        Message::Move { x, y } => {
+            println!("move to x: {}, y: {}", x, y);
+        }
+        Message::Write(text) => {
+            println!("write {}", text);
+        }
+        Message::ChangeColor(r, g, b, a) => {
+            println!("change color to r: {}, g: {}, b: {}, a: {}", r, g, b, a);
+        }
+    }
+}
+```
+
+
+
+#### 解构嵌套的 struct 和 enum
+
+```rust
+enum Color {
+    Rgba(u8, u8, u8, u8),
+    Hsv(u8, u8, u8),
+}
+
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(Color),
+}
+fn main() {
+    let msg = Message::ChangeColor(Color::Hsv(0, 255, 255));
+    match msg {
+        Message::Quit => {
+            println!("quit");
+        }
+        Message::Move { x, y } => {
+            println!("move to x: {}, y: {}", x, y);
+        }
+        Message::Write(text) => {
+            println!("write {}", text);
+        }
+        Message::ChangeColor(Color::Hsv(r, g, b)) => {
+            println!("change color to r: {}, g: {}, b: {}", r, g, b);
+        }
+        _ => (),
+    }
+}
+```
+
+
+
+#### 解构 struct 和 tuple
+
+```rust
+struct Point {
+    x: i32,
+    y: i32,
+}
+fn main() {
+    let ((a, b), Point { x, y }) = ((3, 10), Point { x: 2, y: 9 });
+    println!("{} | {} | {} | {}", a, b, x, y);
+}
+```
+
+
+
+### 在模式中忽略值
+
+#### 使用 `_` 来忽略整个值
+
+```rust
+fn foo(_: i32, y: i32) {
+    println!("This code only uses the y parameter: {}", y);
+}
+fn main() {
+    foo(3, 4)
+}
+```
+
+
+
+#### 使用嵌套的 `_` 来忽略值的一部分
+
+```rust
+fn main() {
+    let mut setting_value = Some(5);
+    let new_setting_value = Some(10);
+
+    match (setting_value, new_setting_value) {
+        (Some(_), Some(_)) => {
+            println!("Can't overwrite and existing customized value");
+        }
+        _ => {
+            setting_value = new_setting_value;
+        }
+    }
+    println!("setting is {:?}", setting_value);
+
+    let numbers = (2, 4, 8, 16, 32, 64);
+    match numbers {
+        (first, _, third, _, fifth, _) => {
+            println!("Some numbers: {}, {}, {}", first, third, fifth)
+        }
+    }
+}
+```
+
+
+
+#### 通过使用 `_` 开头命名来忽略未使用的变量
+
+```rust
+fn main() {
+    let _x = 5;
+
+    let s = Some(String::from("Hello!"));
+
+    if let Some(_s) = s {
+        println!("found a string")
+    }
+    // println!("{:?}", s) // [!code warning] 没有所有权 当_s为_ 时就可用
+}
+```
+
+
+
+#### 使用 `..` 来忽略值的剩余部分
+
+```rust
+struct Point {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+fn main() {
+    let origin = Point { x: 0, y: 0, z: 0 };
+
+    match origin {
+        Point { x, .. } => {
+            println!("x is {}", x);
+        }
+    }
+
+    let numbers = (1, 2, 3, 4, 5);
+
+    match numbers {
+        (one, .., five) => {
+            println!("one is {} and five is {}", one, five);
+        }
+    }
+}
+```
+
+
+
+#### 使用 `match` 守卫来提供额外的条件
+
+> `match` 守卫就是 `match arm` 模式后额外的 `if` 条件，想要匹配该条件也必须满足
+>
+> `match` 守卫适用于比单独的模式更复杂的场景
+
+```rust
+fn main() {
+    let num = Some(4);
+    let y = 5;
+
+    match num {
+        Some(x) if x < 5 => println!("less than five: {}", x),
+        Some(x) if x == y => println!("x=y > {}", x),
+        Some(5) | Some(6) if y > 0 => println!("x=5"),
+        Some(x) => println!("{}", x),
+        None => println!("none"),
+    }
+}
+```
+
+
+
+#### `@` 绑定
+
+> `@` 符号让我们可以创建一个变量，该变量可以在测试某个值是否与模式匹配的同时保存该值
+
+```rust
+enum Message {
+    Hello { id: i32 },
+}
+
+fn main() {
+    let msg = Message::Hello { id: 5 };
+
+    match msg {
+        Message::Hello {
+            id: id_variable @ 3..=7,
+        } => println!("{}", id_variable),
+        Message::Hello { id: 10..=12 } => println!("two"),
+        Message::Hello { id } => println!("other {id}"),
+    }
+}
+```
+
+
+
+## 三十、高级特性
+
+### 不安全 Rust
+
+#### 匹配命名变量
+
+- Rust 中隐藏着第二个语言，他没有强制内存安全保证：`Unsafe Rust` （不安全的 Rust）
+    - 和普通的 Rust 一样，但提供了额外的 “超能力”
+- `Unsafe Rust` 存在的原因
+    - 静态分析是保守的
+        - 使用 `Unsafe Rust` ：我知道直接在做什么，并承担想用风险
+    - 计算机硬件本身就是不安全的，Rust 需要能够进行底层系统编程
+
+
+
+#### `Unsafe` 超能力
+
+- 使用 `unsafe` 关键字来切换到 `unsafe Rust` ，开启一个快，里面放着 `unsafe` 代码
+- Unsafe Rust 里可以执行的四个动作（`unsafe` 超能力）
+    - 解引用原始指针
+    - 调用 `unsafe` 函数或方法
+    - 访问或修改可变的静态变量
+    - 实现 `unsafe trait`
+- 注意：
+    - `unsafe` 并没有关闭借用检查或停用其它安全检查
+    - 任何内存安全相关的错误必须留在 `unsafe` 块里
+    - 尽可能隔离 `unsafe` 代码，最好将其封装在安全的抽象里，提供安全的API
+
+
+
+#### 解引用原始指针
+
+- 原始指针
+    - 可变的：`*mut T`
+    - 不可变的：`*const T` 意味着指针在解引用后不能直接对其进行赋值
+    - 注意：这里的 `*` 部署解引用符号，他是类型名的一部分
+- 与应用不同，原始指针：
+    - 允许通过同时具有具有不可变和可变指针或多个指向同一位置的可变指针来忽略借用规则
+    - 无法保证能指向合理的内存
+    - 允许为 `null`
+    - 不实现任何自动清理
+- 放弃保证的安全，换取更好的性能和与其他语言或硬件接口的能力
+
+
+
+```rust
+
+fn main() {
+    let mut num = 5;
+
+    let r1 = &num as *const i32;
+    let r2 = &mut num as *mut i32;
+
+    unsafe {
+        // [!code warning] 解引用原始指针只能在 unsafe 代码块中
+        println!("{:p}", r1);
+        println!("{}", *r1);
+        println!("{:p}", r2);
+        println!("{}", *r2);
+    }
+
+    let address = 0x012345usize;
+    let ptr = address as *const i32;
+
+    unsafe {
+        // [!code warning] 非法访问
+        println!("{:p}", ptr);
+        println!("{}", *ptr)
+    }
+}
+```
+
+
+
+- 为什么要用原始指针？
+    - 与C语言进行接口交互
+    - 构建借用检查器无法理解的安全抽象
+
+
+
+#### 调用 `unsafe` 函数或方法
+
+- `unsafe` 函数或方法：在定义前加上了 `unsafe` 关键字
+    - 调用前需要手动满足一些条件（主要依靠文档中的要求），因为 Rust 无法对这些条件进行验证
+    - 需要在 unsafe 块里进行调用
+
+```rust
+unsafe fn dangerous() {
+    println!("This is dangerous!");
+}
+
+fn main() {
+    unsafe {
+        dangerous();
+    }
+    // dangerous(); // [!code warning] unsafe 块外调用是不安全的无法调用
+}
+```
+
+
+
+#### 创建 `unsafe` 代码的安全抽象
+
+- 函数包含 `unsafe` 代码并不意味这需要将真个函数标记为 `unsafe`
+- 将 `unsafe` 代码包裹在安全函数中是一个常见的抽象
+
+```rust
+use std::slice;
+
+fn split_at_mut(slice: &mut [i32], mid: usize) -> (&mut [i32], &mut [i32]) {
+    let len = slice.len();
+
+    assert!(mid <= len);
+    // (&mut slice[..mid], &mut slice[mid..len]) // [!code warning] 认为不安全无法这样使用
+    let ptr = slice.as_mut_ptr();
+    unsafe {
+        (
+            // [!code warning] 从 ptr(原始指针) 往后取 mid(长度) 个切片
+            slice::from_raw_parts_mut(ptr, mid),
+            slice::from_raw_parts_mut(ptr.add(mid), slice.len() - mid),
+        )
+    }
+}
+
+fn main() {
+    let mut v = vec![1, 2, 3, 4, 5, 6];
+    let (left, right) = v.split_at_mut(3);
+    assert_eq!(left, &mut [1, 2, 3]);
+    assert_eq!(right, &mut [4, 5, 6]);
+}
+```
+
+
+
+#### 使用 `extern` 函数调用外部代码
+
+- `extern` 关键字：简化创建和使用外部函数接口（`FFI`）的过程
+- 外部函数接口（`FFI` 全名 `Foreign Function Interface`）：它允许一种编程语言定义函数，并让其它编程语言能调用这些函数
+- `extern` 块中声明的任何都是不安全的
+
+```rust
+extern "C" { // [!code warning] 调用语言的名称
+
+    fn abs(input: i32) -> i32; // [!code warning] 调用函数的名称和签名
+}
+
+fn main() {
+    unsafe { println!("Absolute value of -3 according to C: {}", abs(-3)) }
+}
+```
+
+- 应用二进制接口（`ABI`, `Application Binary Interface`）：定义函数在汇编层的调用方式
+- “`C`”  ABI 是最常见的 ABI，它遵循 C 语言的 ABI
+
+
+
+#### 从其他语言来调用 Rust 函数
+
+- 可以使用 `extern` 创建接口，其他语言通过他们可以调用 Rust的函数
+- 在 `fn` 前添加 `extern` 关键字，并指定 ABI
+- 还需要添加 `#[no_mangle]` 注解：避免 Rust 在编译时改变它的名称
+
+```rust
+#[no_mangle]
+pub extern "C" fn call_form_c() {
+    println!("Just called a Rust function from C!");
+}
+
+fn main() {}
+```
+
+
+
+#### 访问或修改一个可变静态变量
+
+- Rust支持全局变量，但因为所有权机制可能产生某些问题，例如数据竞争
+- 在 Rust 里，全局变量叫做静态（static）变量
+
+```rust
+
+static HELLO_WORLD:  &str = "Hello, world!";
+
+fn main() {
+    println!("name is: {HELLO_WORLD}")
+}
+```
+
+
+
+##### 静态变量
+
+- 静态变量与常量类似
+- 命名：`SCREAMING_SNAKE_CASE`
+- 必须标注类型
+- 金泰变量只能存储 ``static` 生命周期的应用，无需显式标注
+
+##### 常量和不可变静态变量的区别
+
+- 静态变量：有固定的内存地址，使用它的值总会访问同样的数据
+- 常量：允许使用他们的使用对数据进行复制
+- 静态常量：可以是可变的，访问呢和修改静态可变变量是不安全（`unsafe`）的
+
+```rust
+static mut CONTER: u32 = 0; // 可变静态变量
+
+fn add_to_counter(inc: u32) {
+    unsafe {
+        CONTER += inc;
+    }
+}
+
+fn main() {
+    add_to_counter(3);
+
+    unsafe {
+        println!("{}", CONTER);
+    }
+}
+
+```
+
+
+
+#### 实现不安全的（`unsafe`）`trsit`
+
+- 当某个 `trait` 中存在至少一个方法拥有编译器无法校验的不安全因素时，就称这个 `trait` 是不安全的
+- 声明 `unsafe trait`：在顶以前加 `unsafe` 关键字
+    - 该 `trait` 只能在 `unsafe` 代码块中实现
+
+```rust
+unsafe trait Foo {
+    fn foo(&self);
+}
+unsafe impl Foo for i32 {
+    fn foo(&self) {
+        println!("i32");
+    }
+}
+```
+
+
+
+#### 何时使用 `unsafe` 代码
+
+- 编译器无法保证内存安全，保证 `unsafe` 代码正确并不简单
+- 有充足理由使用 `unsafe` 代码时，就可以这样做
+- 通过显式标记 `unsafe` ，可以在出现问题时轻松定位
