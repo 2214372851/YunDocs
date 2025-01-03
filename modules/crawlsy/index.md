@@ -299,16 +299,12 @@ CORS_ALLOW_HEADERS=*
 
 ## 6. 免责声明
 
-请查看 [DISCLAIMER.md](DISCLAIMER.md) 了解完整的免责声明。
-
 > 重要提示：
 > - 本软件仅供学习和研究使用
 > - 请遵守相关法律法规和网站的使用条款
 > - 不得用于任何非法用途
 
 ## 7. 开源协议
-
-[GNU General Public License v2.0](LICENSE)
 
 Crawlsy 是自由软件，您可以根据自由软件基金会发布的 GNU 通用公共许可证（版本 2）的条款重新分发或修改它。
 
