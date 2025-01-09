@@ -7165,3 +7165,433 @@ unsafe impl Foo for i32 {
 - 编译器无法保证内存安全，保证 `unsafe` 代码正确并不简单
 - 有充足理由使用 `unsafe` 代码时，就可以这样做
 - 通过显式标记 `unsafe` ，可以在出现问题时轻松定位
+
+
+
+### 高级 `Trait`
+
+#### 在 `Trait` 的定义中使用关联类型来指定占位类型
+
+- 关联类型 `associated type` 是 `Trait` 中的类型占位符，它可以用于 `Trait` 的方法签名中
+    - 可以定义包含某些类型的 `Trait` ，而在实现前无需知道这些类型是什么
+
+```rust
+pub trait Iterator {
+    type Item; // 类型占位符
+
+    fn next(&mut self) -> Option<Self::Item>;
+}
+
+fn main() {
+    println!("Hello, world!")
+}
+```
+
+
+
+关联类型和泛型的区别
+
+| 泛型                                               | 关联类型                         |
+| -------------------------------------------------- | -------------------------------- |
+| 每次实现 Trait 时标注类型                          | 无需标注类型                     |
+| 可以为一个类型多次实现某个 Trait（不同的泛型参数） | 无法为单个类型多次实现某个 Trait |
+
+#### 默认泛型参数和运算符重载
+
+- 可以在使用泛型参数时为泛型指定一个默认的具体类型
+- 语法：`<PlaceholderType=ConcreteType>`
+- 这种使用方式常用于运算符重载 （`operator overloading`）
+- Rust 不允许创建自己的运算符及重载任意的运算符
+- 但可以通过实现 `std::ops` 中列出的那些 trait 来重载一部分相应的运算符
+
+```rust
+use std::ops::Add;
+
+#[derive(Debug, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+fn main() {
+    assert_eq!(
+        Point { x: 1, y: 2 } + Point { x: 3, y: 4 },
+        Point { x: 4, y: 6 }
+    );
+}
+```
+
+
+
+```rust
+use std::ops::Add;
+
+#[derive(Debug, PartialEq)]
+struct Millimeters(u32);
+struct Meters(u32);
+
+impl Add<Meters> for Millimeters {
+    type Output = Millimeters;
+
+    fn add(self, other: Meters) -> Millimeters {
+        Millimeters(self.0 + (other.0 * 1000))
+    }
+}
+
+fn main() {
+    assert_eq!(
+        Millimeters(2000),
+        Millimeters(1000) + Meters(1)
+    );
+}
+```
+
+
+
+#### 默认泛型参数的主要应用场景
+
+- 扩展一个类型而不破坏现有代码
+- 允许在大部分用户都不需要的特定场景下进行自定义
+
+
+
+#### 完全限定语法 （`Fully Qualified Syntax`）如何调用同名方法
+
+完全限定语法：`<Type as Trait>::function(receiver_if_method, netx_arg, ...);`
+
+- 可以在任何调用函数或方法的地方使用
+- 允许忽略那些从其他上下文能推到出来的部分
+
+同名函数调用示例
+
+```rust
+trait Pilot {
+    fn fly(&self);
+}
+
+trait Wizard {
+    fn fly(&self);
+}
+
+struct Human;
+
+impl Pilot for Human {
+    fn fly(&self) {
+        println!("This is your captain speaking.");
+    }
+}
+
+impl Wizard for Human {
+    fn fly(&self) {
+        println!("Waving magic wand...");
+    }
+}
+
+impl Human {
+    fn fly(&self) {
+        println!("*waving arms furiously*");
+    }
+}
+
+fn main() {
+    let person = Human;
+    person.fly();
+    Pilot::fly(&person);
+    Wizard::fly(&person);
+}
+
+```
+
+同名函数调用反例
+
+```rust
+trait Animal {
+    fn baby_name() -> String;
+}
+
+struct Dog;
+
+impl Dog {
+    fn baby_name() -> String {
+        String::from("Spot")
+    }
+}
+
+impl Animal for Dog {
+    fn baby_name() -> String {
+        String::from("puppy")
+    }
+}
+
+fn main() {
+    println!("A baby dog is called a {}", Dog::baby_name());
+    // println!("A baby dog is called a {}", Animal::baby_name()); [!code error] 没有参数无法推断实现
+    println!("A baby dog is called a {}", <Dog as Animal>::baby_name());
+}
+```
+
+
+
+#### 使用 `supertrait` 来要求 `trait` 附带其他 `trait` 的功能
+
+- 需要在一个 `trait` 中使用其他 `trait` 的功能
+    - 需要被依赖的 `trait` 也被实现
+    - 那个被依赖的 `trait` 就是当前 `trait` 的 `supertrait`
+
+```rust
+use std::fmt;
+
+trait OutlinePrint: fmt::Display {
+    fn outline_print(&self) {
+        // 依赖 fmt::Display trait 的 to_string() 方法
+        let output = self.to_string();
+        let len = output.len();
+        println!("{}", "*".repeat(len + 4));
+        println!("*{}*", " ".repeat(len + 2));
+        println!("* {} *", output);
+    }
+}
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl OutlinePrint for Point {}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+```
+
+
+
+#### 使用 `newtype` 模式在外部类型上实现外部 `trait`
+
+- 孤儿规则：只有当 `trait` 或类型定义在本地包时，才能为该类型实现这个 `trait`
+- 可以通过 `newtype` 来绕过这一规则
+    - 利用 `tuple struct` （元组结构体）创建一个新的类型
+
+```rust
+use std::fmt;
+
+struct Wrapper(Vec<String>);
+
+impl fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // 通过为 Wrapper 实现 fmt::Display 特征，实则为 Vec<String> 实现了 fmt::Display 特征
+        write!(f, "[{}]", self.0.join(", "))
+    }
+}
+
+fn main() {
+    let w = Wrapper(vec![String::from("hello"), String::from("world")]);
+    println!("w = {}", w);
+}
+```
+
+
+
+### 高级类型
+
+#### 使用 `newtype` 模式实现类型安全和抽象
+
+- `newtype` 模式功能
+    - 用来静态保证各种值之间不会混淆并表明值的单位
+    - 为类型的某些细节提供抽象能力
+    - 通过轻量级的分装来隐藏内部实现细节
+
+
+
+#### 使用类型别名创建类型同义词
+
+- Rust 提供了类型别名的功能
+    - 为现有类型生产另外的名称（同义词）
+    - 并不是一个独立的类型
+    - 使用 `type` 关键字
+- 主要用途：减少代码字符重复
+
+```rust
+type Kilometers<T> = T;
+
+fn main() {
+    let x: i32 = 5;
+    let y: Kilometers<i32> = 10;
+    println!("x + y = {}", x + y);
+}
+```
+
+
+
+#### `Never` 类型
+
+- 有一个名为 `！` 的特殊类型
+    - 他没有任何值，一边称为空类型（`empty type`）
+    - 倾向于叫它 `never` 类型，因为它在不返回的函数中充当返回类型
+- 不返回值的函数也被称做发散函数（`diverging function`）
+
+```rust
+fn bar() -> ! {
+    // error: `!` 无法创建返回，因为loop死循环不会返回
+    loop {
+        println!("Hello, world!")
+    }
+}
+
+fn main() {
+    let guess = "42";
+    loop {
+        let guess: u32 = match guess.trim().parse() {
+            Ok(num) => num,
+            Err(_) => continue, // [!code error] 此时返回的也是 never 类型，但 never 类型能被转为任意类型
+        };
+    }
+}
+
+```
+
+
+
+#### 动态大小和 `Sized Trait`
+
+- Rust 需要在编译时确定为一个特定类型的值分配多少空间
+- 动态大小的类型（`Dynamically Sized Types，DST`）的概念：
+    - 编写代码时使用只有在允许时才能确定大小的值
+- `str` 是动态大小的类型（不是 `&str`）：只有运行时才能确定字符串的长度
+    - 下列代码无法正常工作
+        - `let s1: str = "Hello there!"`
+        - `let s2: str = "How's it going؋"`
+    - 使用 `&str` 来解决
+        - `str` 的地址
+        - `str` 的长度
+
+
+
+#### Rust 使用动态大小类型的通用方式
+
+- 附带一些额外的元数据来存储动态信息的大小
+    - 使用动态大小类型是总会把他的值放在某种指针后面
+
+#### 另一种动态大小类型 `trait`
+
+- 每个 `trait` 都是一个动态大小的类型，可以通过名称对其进行引用
+- 为了将 `trait` 用作 `trait` 对象，必须将他防止在某种指针之后
+    - 例如 `&dyn Trait` 或 `Box<dyn Trait>`、`Rc<dyn Trait` 之后
+
+
+
+#### `Sized trait`
+
+- 为了处理动态大小类型，Rust 提供了一个 `Sized trait` 来确定一个类型的大小在编译时是否已知
+- 编译时可以计算出大小的类型会自动实现这个 `trait`
+- Rust 还会为每一个泛型函数隐式的添加 `Sized` 约束
+
+```rust
+fn generic<T>(t: T) {}
+// 上方函数会被隐式转为下方函数
+fn generic<T: Sized>(t: T){}
+```
+
+- 默认情况下，泛型函数只能被用于编译时已经知道大小的类型，可以通过特殊语法接触这一限制
+
+
+
+#### `?Sized trait` 约束
+
+```rust
+fn generic<T: Sized>(t: T){}
+// 此时 T 的大小可能是未知的，所以变成了 T 的引用
+fn generic<T: ?Sized>(t: &T){}
+```
+
+- `T` 可能是也可能不是 `Sized`
+- 这个语法只能用在 `Sized` 扇面，不能用于其他 `trait`
+
+
+
+### 高级函数和闭包
+
+#### 函数指针
+
+- 可以将函数传递给其他函数
+- 函数在传递中会被强制转换成 `fn` 类型
+- `fn` 类型就是 “函数指针（`function pointer`）”
+
+```rust
+fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
+fn do_twice(f: fn(i32) -> i32, arg: i32) {
+    println!("{}", f(arg));
+}
+
+fn main() {
+    let answer = do_twice(add_one, 5);
+}
+```
+
+
+
+#### 函数指针与闭包的不同
+
+- `fn` 是一个类型，不是一个 `trait`
+    - 可以直接指定 `fn` 为参数类型，不用声明一个以 `Fn trait` 为约束的泛型参数
+- 函数指针实现了全部 3 种闭包 `trait`（`Fn`，`FnMut`，`FnOnce`）
+    - 总是可以把函数指针用作参数传递给一个接收闭包的函数
+    - 所以倾向于搭配闭包 `trait` 的泛型来编写函数：可以同时接收闭包和普通函数
+- 某些情况下，只想接收 `fn` 而不接收闭包
+    - 与外部不支持闭包的代码交互：C函数
+
+```rust
+fn main() {
+    let list_of_numbers = vec![1, 2, 3, 4, 5];
+    let list_of_strings: Vec<String> = list_of_numbers
+        .iter()
+        .map(|i| i.to_string())
+        .collect();
+
+    let list_of_numbers = vec![1, 2, 3];
+    let list_of_strings: Vec<String> = list_of_numbers
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+}
+
+fn main2() {
+    enum Status {
+        Value(u32),
+        Stop,
+    }
+    // 构造器也被实现了函数的调用方式所以可以传递使用
+    let list_of_statuses: Vec<Status> = (0u32..20)
+        .map(Status::Value)
+        .collect();
+}
+```
+
+
+
+#### 返回闭包
+
+- 闭包使用 `trait` 进行表达，无法在函数中直接返回一个闭包，可以将一个实现了该 `trait` 的具体类型作为返回值
+
+```rust
+// fn returns_closure() -> Fn(i32) -> i31 {} [!code error] trait不可以这样用
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+    Box::new(|x| x + 1)
+}
+```
+

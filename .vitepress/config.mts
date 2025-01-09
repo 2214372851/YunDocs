@@ -4,7 +4,9 @@ import fs from 'fs';
 import path from 'path';
 
 // https://vitepress.dev/reference/site-config
-const baseUrl = 'https://2214372851.github.io';
+// const baseUrl = 'https://2214372851.github.io';
+// baseUrl 从环境变量获得
+const baseUrl = process.env.BASE_URL;
 const RSS: RSSOptions = {
     title: 'YunDocs',
     description: 'YunDocs | Documented study notes have been developed for module documentation',

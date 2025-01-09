@@ -358,33 +358,32 @@ def __str__(self):
     return self.title
 ```
 
-			![image-20220507150249197](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220507150249197.png)
-	
-			部门被删除员工处理
-			一起删除（级联删除）
+部门被删除员工处理：一起删除（级联删除）
 
-```
+```python
 depart = models.ForeignKey(to='depatments',to_field='id',on_delete=models.CASCADE)
 ```
 
-			置空
+置空
 
-```
+```python
 depart = models.ForeignKey(to='depatments',to_field='id',null=True,blank=True,on_delete=models.SET_NULL)
 	
 ```
 
-	Django里的约束
-		性别（1代表男，2代表女）
-			gender_choices = ((1,'男'),(2,'女'))
-			gender = models.SmallIntegerField(verbose_name='性别',choices=gender_choices)
+Django里的约束：性别（1代表男，2代表女）
+
+```python
+gender_choices = ((1,'男'),(2,'女'))
+gender = models.SmallIntegerField(verbose_name='性别',choices=gender_choices)
+```
 
 ### 9.4	数据库元组套元组
 
 ![image-20220506232826504](https://gitee.com/yinhanorsuli/pic-go/raw/master/img/image-20220506232826504.png)
 
 ```python
-在django里用get_字段名称_display()可以自动把1输出男2输出女
+# 在django里用get_字段名称_display()可以自动把1输出男2输出女
 obj.get_gender_display()
 ```
 
@@ -1695,11 +1694,11 @@ Project.objects.filter(dataPerson__uid=uid).prefetch_related(
 >     - .values('dataBatch'):
         >
         >       这指定了子查询的分组条件，它根据 dataBatch 字段对查询结果进行分组。
->    
+>        
 >     - .annotate(c=Count('uid')):
         >
         >       这会添加一个注解结果，通过计算每一个组的 uid 字段的数量。
->    
+>        
 >     - .values('c'):
         >
         >       这返回最后的子查询结果，即每一个组的 uid 字段的数量。
