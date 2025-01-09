@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 
 // https://vitepress.dev/reference/site-config
-const baseUrl = 'https://2214372851.github.io';
+// const baseUrl = 'https://2214372851.github.io';
+const baseUrl = 'https://yundocs.pages.dev';
 const RSS: RSSOptions = {
     title: 'YunDocs',
     description: 'YunDocs | Documented study notes have been developed for module documentation',
@@ -15,7 +16,8 @@ const aiDir = path.resolve(__dirname, '../ai'); // 确保路径正确
 const aiFiles = fs.readdirSync(aiDir).filter((file) => file.endsWith('.md'));
 export default withMermaid({
     title: "YunDocs",
-    base: '/YunDocs/',
+    // base: '/YunDocs/',
+    base: '/',
     description: "YunDocs | Documented study notes have been developed for module documentation",
     vite: {
         plugins: [
