@@ -30,6 +30,7 @@
     - [Vue](Web/Vue)
 - Rust
     - [Rust](Rust/Rust)
+    - [Rust简记](Rust/Rust简记)
 - Golang
     - [Golang](Golang/Golang)
 - 数据库

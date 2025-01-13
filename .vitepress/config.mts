@@ -154,7 +154,8 @@ export default withMermaid({
                     text: 'Rust',
                     collapsed: true,
                     items: [
-                        {text: 'Rust', link: '/study/Rust/Rust'}
+                        {text: 'Rust', link: '/study/Rust/Rust'},
+                        {text: 'Rust简记', link: '/study/Rust/Rust简记'}
                     ]
                 },
                 // {

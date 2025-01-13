@@ -1,6 +1,8 @@
 # Python 技巧与库
 
+## Gradio 快速生成AI应用的UI服务
 
+https://www.gradio.app/
 
 ## Logging 最佳实践
 
