@@ -1783,6 +1783,10 @@ process = Popen(
 
 ## 网络请求
 
+### [miquests](https://niquests.readthedocs.io/en/stable/)
+
+> Niquests 是一个简单而优雅的 HTTP 客户端, 简单说它是 Requests 的直接替代品。 因为多年来Requests 功能一直处于停滞不前的状态，由于不前进的状态并且没有发展，这阻止了数百万开发人员使用更高级的功能，所以就有了Niquests, Niquests 是唯一能够自动提供 HTTP/1.1、HTTP/2 和 HTTP/3 的 HTTP 客户端, 该项目深入研究了协议（早期响应、尾部标头等）和所有相关的网络基本要素（如 DNS-over-HTTPS、高级性能计量等，而且Niquests是最安全，最快，最简单和最先进的Python HTTP 客户端。
+
 ### [HTTPX](https://www.python-httpx.org/)
 
 > HTTPX 是 Python 3 的全功能 HTTP 客户端，它提供同步和异步 API，并支持 HTTP/1.1 和 HTTP/2。

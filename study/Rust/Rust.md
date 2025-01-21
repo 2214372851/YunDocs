@@ -7590,8 +7590,558 @@ fn main2() {
 
 ```rust
 // fn returns_closure() -> Fn(i32) -> i31 {} [!code error] trait不可以这样用
+// 没办法判断闭包的内存大小所以需要使用 Box dyn 对象包裹变为指针
 fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
     Box::new(|x| x + 1)
 }
 ```
+
+
+
+### 宏
+
+#### 宏 `macro`
+
+宏在 Rust 里指的是一组相关特性的集合称谓：
+
+- 使用 `macro_rules!` 构建的声明宏（`declarative macro`）
+- 三种过程宏
+    - 自定义 `#[derive]` 宏，用于 `struct` 和 `enum`，可以为其指定跟随 `derive` 属性添加的代码
+    - 类似属性的宏，在任何条目上添加自定义属性
+    - 类似函数的宏，看起来像函数调用，对其指定为参数的 `token` 进行操作
+
+#### 函数和宏的区别
+
+- 本质上，宏是用来编写可以生成其他代码的代码（元编程，`metaprogramming`）
+- 函数在定义签名时，必须声明参数的个数和类型，宏可处理可变的参数
+- 编译器会在解释代码前展开宏
+- 宏的定义比函数复杂得多，难以阅读、理解、维护
+- 在某个文件调用宏时，必须提前定义宏或将宏引入当前作用域
+- 函数可以在任何位置定义和使用
+
+
+
+#### `macro_rules!` 声明宏（弃用）
+
+Rust最初将的宏形式：声明宏
+
+- 类似 `match` 的模式匹配
+- 需要使用 `marco_rules!`
+
+```rust
+#[macro_export]
+macro_rules! vec    {
+    // `$x:expr` 将任何表达式捕获为 `$x`，`*` 表示零个或多个
+    ( $( $x:expr ), *) => {
+        {
+            let mut temp_vec = Vec::new();
+            // `$x` 捕获表达式，`*` 表示零个或多个，把他们放到 `temp_vec` 中
+            $(
+                temp_vec.push($x);
+            )*
+            temp_vec
+        }
+    };
+}
+```
+
+
+
+#### 基于属性来生成代码的过程宏
+
+这种形式更像函数（某种形式的过程）一些
+
+- 接收并操作输入的 Rust 代码
+- 生成另外一些 Rust 代码作为结果
+
+三种过程宏：
+
+- 自定义派生
+- 属性宏
+- 函数宏
+
+创建过程宏时：
+
+- 宏定义必须单独放在它们自己的包中，并使用特殊的包类型
+
+
+
+```rust
+use proc_macro;
+use proc_macro::TokenStream;
+
+#[proc_macro]
+pub fn some_name(input: TokenStream) -> TokenStream {
+    input
+}
+```
+
+
+
+
+
+> **注意**: 使用 Cargo 时，定义过程宏的 crate 的配置文件里要使用 `proc-macro`键做如下设置：
+
+```toml
+[lib]
+proc-macro = true
+```
+
+
+
+##### 自定义 `derive` 宏
+
+需求：
+
+- 创建一个 `hello_macro` 包，定义一个拥有关联函数 `hello_macro` 的 `HelloMacro trait`
+- 我们提供一个能自动实现 `trait` 的过程宏
+- 在它们的类型上标注 `#[derive(HelloMacro)]`，进而得到 `hello_macro` 的默认实现
+
+文件结构树：
+
+```
+workspase
+├─ Cargo.lock
+├─ Cargo.toml
+├─ pancakes
+│  ├─ Cargo.toml
+│  └─ src
+│     └─ main.rs
+├─ hello_macro_derive
+│  ├─ Cargo.toml
+│  └─ src
+│     └─ lib.rs
+└─ hello_macro
+   ├─ Cargo.toml
+   └─ src
+      └─ lib.rs
+```
+
+
+
+**`touch Cargo.toml`**
+
+```toml
+# Cargo.toml
+[workspace]
+resolver = "2"
+members = [
+	"hello_macro",
+	"hello_macro_derive",
+	"pancakes",
+]
+```
+
+
+
+**`cargo new hello_macro --lib`**
+
+~~~rust
+// hello_macro/src/lib.rs
+pub trait HelloMacro {
+    fn hello_macro();
+}
+~~~
+
+
+
+**`cargo new hello_macro_derive --lib`**
+
+```toml
+# hello_macro_derive/Cargo.toml
+[package]
+name = "hello_macro_derive"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.14.4"
+quote = "0.6.3"
+
+```
+
+
+
+```rust
+// hello_macro_derive/src/lib.rs
+extern crate proc_macro;
+
+use crate::proc_macro::TokenStream;
+use quote::quote; // 可以把 syn 转换的数据结构重新转换为rust代码
+use syn; // 用于把rust代码转为我们可以操作的结构
+
+// #[derive(HelloMacro)] hello_macro_derive 会被自动调用
+#[proc_macro_derive(HelloMacro)]
+pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+    let ast = syn::parse(input).unwrap();
+    impl_hello_macro(&ast)
+}
+
+fn impl_hello_macro(ast: &syn::DeriveInput) -> TokenStream {
+    let name = &ast.ident;
+    let gen = quote! {
+        impl HelloMacro for #name {
+            fn hello_macro() {
+                println!("Hello, Macro! My namr is {}", stringify!(#name)) // 接收一个表达式但是不计算，把他转为字符串
+            }
+        }
+    };
+    // 转为 TokenStream
+    gen.into()
+}
+```
+
+
+
+**`cargo new pancakes `**
+
+```toml
+# pancakes/Cargo.toml
+[package]
+name = "pancakes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hello_macro = { path = "../hello_macro" }
+hello_macro_derive = { path = "../hello_macro_derive" }
+```
+
+
+
+```rust
+// pancakes/src/lib.rs
+use hello_macro::HelloMacro;
+use hello_macro_derive::HelloMacro;
+
+#[derive(HelloMacro)]
+struct Pancakes;
+
+fn main() {
+    Pancakes::hello_macro();
+}
+```
+
+
+
+
+
+#### 类似属性的宏
+
+属性宏与自定义 `derive` 宏类似
+
+- 允许创建新的属性
+- 但不是为 `derive` 属性生成代码
+
+属性宏更加灵活
+
+- `derive` 只能用于 `struct` 和 `enum`
+- 属性宏可以用于任意条目，例如函数
+
+```rust
+#[route(GET, "/")]
+fn index() {}
+
+// 定义方式
+#[proc_macro_attribute]
+pub fn route(attr: TokenStream, item: TokenStream) -> TokenStream {}
+```
+
+
+
+#### 类似函数的宏
+
+- 函数宏定义类似于函数调用的宏，但比普通函数更加灵活
+- 函数宏可以接收 `TokenStream` 作为参数
+- 与另外两种过程宏一样，在定义中使用 Rust 代码来操作 `TokenStream`
+
+```rust
+// 解析sql语句的宏
+let sql = sql!(SELECT * FROM posts WHERE id=1 );
+
+#[proc_macro]
+pub fn sql(input: TokenStream) -> TokenStream {}
+```
+
+
+
+## 三十一、构建Web服务器
+
+### 构建多线程 Web服务器
+
+- 在 `socket` 上监听 `TCP` 连接
+- 解析少量的 `HTTP` 请求
+- 创建一个合适的 `HTTP` 响应
+- 使用线程池改进服务器的吞吐量
+
+> 此处并不是最佳实现
+
+文件结构如下：
+```
+webserver
+├─ 404.html
+├─ Cargo.lock
+├─ Cargo.toml
+├─ hello.html
+└─ src
+   ├─ lib.rs
+   └─ main.rs
+```
+
+`404.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>404</title>
+</head>
+<body>
+<h1>你的页面走丢了</h1>
+</body>
+</html>
+```
+
+`hello.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Hello World!</h1>
+<p>This is a test.</p>
+</body>
+</html>
+```
+
+`lib.rs`
+
+```rust
+// src\lib.rs
+use std::sync::{mpsc, Arc, Mutex}; // mpsc 用于创建消息传递通道, Arc 和 Mutex 用于创建线程安全的数据结构
+use std::thread;
+
+enum Message {
+    /// Message enum
+    ///
+    /// 用于向线程池中传递任务和结束信号
+    NewJob(Job),
+    Terminate,
+}
+pub struct ThreadPool {
+    /// ThreadPool struct
+    ///
+    /// 线程池对象，维护了一个 `workers` 工作线程池，以及一个 `sender` 用于向线程池中传递任务和结束信号
+    workers: Vec<Worker>,
+    sender: mpsc::Sender<Message>,
+}
+
+// struct Job;
+impl ThreadPool {
+    /// 创建线程池.
+    ///
+    /// size 是池中的线程数
+    ///
+    /// # Panics
+    ///
+    /// 如果大小为零，'new' 函数将 panic。
+    pub fn new(size: usize) -> ThreadPool {
+        // 确保线程池大小不为零
+        assert!(size > 0);
+        // 创建一个消息传递通道，用于传递任务和结束信号
+        let (sender, receiver) = mpsc::channel();
+        // 创建一个 Arc 和 Mutex，用于包装接收端，使接收端能在多个线程间共享所有权
+        let receiver = Arc::new(Mutex::new(receiver));
+        // 创建一个预分配 size Vec 空间
+        let mut workers = Vec::with_capacity(size);
+        // 创建 size 个工作线程，并放入 Vec 中
+        for id in 0..size {
+            // 使用 Arc::clone 来创建一个共享所有权的接收端
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+        // 返回线程池对象
+        ThreadPool { workers, sender }
+    }
+
+    pub fn execute<F>(&self, f: F)
+    // F: FnOnce() + Send + 'static 来自 thread::spawn 函数的参数类型
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        // 创建一个 Box 来包装任务闭包函数
+        let job = Box::new(f);
+        // 将任务闭包函数发送到消息传递通道中
+        self.sender.send(Message::NewJob(job)).unwrap();
+    }
+}
+impl Drop for ThreadPool {
+    /// 线程池析构函数，用于向线程池中发送结束信号，并等待所有工作线程结束
+    fn drop(&mut self) {
+        println!("Sending terminate message to all workers.");
+        // 向消息传递通道中发送线程数等量的结束信号
+        for _ in &mut self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
+        println!("Shutdown down all workers.");
+        // 循环等待所有工作线程结束
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+
+struct Worker {
+    /// Worker struct
+    ///
+    /// 工作线程对象，维护了一个线程句柄和线程 ID
+    id: usize,
+    // thread::JoinHandle 类型来自 thread::spawn 函数的返回值
+    thread: Option<thread::JoinHandle<()>>,
+}
+
+trait FnBox {
+    /// FnBox trait
+    ///
+    /// 用于定义一个函数指针，用于在 trait 中实现函数指针的调用
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// fn foo() {
+    ///     println!("foo");
+    /// }
+    ///
+    /// fn bar() {
+    ///     println!("bar");
+    /// }
+    ///
+    /// fn main() {
+    ///     let f = foo;
+    ///     let b = bar;
+    ///     let fb = f as Box<FnBox>;
+    ///     fb();
+    ///     let fb = b as Box<FnBox>;
+    ///     fb();
+    /// }
+    /// ```
+    fn call_box(self: Box<Self>);
+}
+impl<F: FnOnce()> FnBox for F {
+    /// FnBox trait 的实现
+    ///
+    /// 掉用 `FnOnce` 函数指针， F类型为实现了 `FnOnce` 的所有 `FnBox` 的函数
+    fn call_box(self: Box<F>) {
+        (*self)()
+    }
+}
+
+type Job = Box<dyn FnBox + Send + 'static>; // Job 类型来自 thread::spawn 函数的参数类型，使用 `Box` 包裹为了编译阶段能获取大小
+
+impl Worker {
+    /// 创建一个工作线程，并把线程句柄放入 Vec 中
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - 工作线程 ID
+    /// * `receiver` - 用于接收消息的接收端
+    ///
+    /// # Returns
+    ///
+    /// * `Worker` - 工作线程对象
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
+        // 创建一个线程，并把线程句柄放入 Vec 中
+        let thread = thread::spawn(move || loop {
+            let message = receiver.lock().unwrap().recv().unwrap();
+            match message {
+                Message::NewJob(job) => {
+                    println!("Worker {} got a job; executing.", id);
+                    job.call_box();
+                }
+                Message::Terminate => {
+                    println!("Worker {} was told to terminate.", id);
+                    break;
+                }
+            }
+        });
+        Worker {
+            id,
+            thread: Some(thread),
+        }
+    }
+}
+```
+
+`main.rs`
+
+```rust
+use std::{fs, thread};
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::time::Duration;
+use webserver::ThreadPool;
+
+fn main() {
+    println!("Server is running at 127.0.0.1:8001");
+    let listener = TcpListener::bind("127.0.0.1:8001").unwrap();
+    let pool = ThreadPool::new(4);
+    // take(2) 只能迭代 2 个连接
+    for stream in listener.incoming().take(2) {
+        let stream = stream.unwrap();
+        pool.execute(|| {
+            handle_connection(stream);
+        });
+    }
+    println!("Shutting down.");
+}
+
+// tcp 请求的内部状态可能会改变所以需要使用 mut
+fn handle_connection(mut stream: TcpStream) {
+    // 创建了一个存放数据的缓存 512 字节
+    let mut buffer = [0; 512];
+    // 从 stream 中读取数据到 buffer 中
+    stream.read(&mut buffer).unwrap();
+    // 输出 buffer 中的内容
+    // println!("-----------------------------------");
+    // println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
+
+    // 请求
+    // Method Request-URI HTTP-Version CRLF
+    // Header CRLF
+    // message-body
+
+    // 响应
+    // HTTP-Version Status-Code Reason-Phrase CRLF
+    // Header CRLF
+    // message-body
+
+    let get = b"GET / HTTP/1.1\r\n";
+    let sleep = b"GET /sleep HTTP/1.1\r\n";
+    let (status_line, filename) = if buffer.starts_with(get) {
+        ("HTTP/1.1 200 OK\r\nContent-Type: text/html", "hello.html")
+    } else if buffer.starts_with(sleep) {
+        thread::sleep(Duration::from_secs(3));
+        ("HTTP/1.1 200 OK\r\nContent-Type: text/html", "hello.html")
+    } else {
+        ("HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html", "404.html")
+    };
+    let contents = fs::read_to_string(filename).unwrap();
+    let response = format!("{}\r\nContent-Length: {}\r\n\r\n{}", status_line, contents.len(), contents);
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
+    println!("-");
+}
+```
+
+
 
