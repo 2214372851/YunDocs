@@ -1,5 +1,91 @@
 # Python 技巧与库
 
+## `pathvalidate` 路径消毒校验
+
+> PathValidate是一个Python库，可以对诸如文件名/文件路径/等的字符串进行消毒/验证。
+
+- 文件名消毒
+
+```python
+from pathvalidate import sanitize_filename
+
+filename = "fi:l*e/p\"a?t>h|.t<xt"
+print(f"{filename} -> {sanitize_filename(filename)}\n")
+```
+
+- 文件路径消毒
+
+```python
+from pathvalidate import sanitize_filepath
+
+filepath = "fi:l*e/p\"a?t>h|.t<xt"
+print(f"{filepath} -> {sanitize_filepath(filepath)}\n")
+```
+
+- 验证文件名
+
+```python
+from pathvalidate import ValidationError, validate_filename
+
+try:
+    validate_filename("fi:l*e/p\"a?t>h|.t<xt")
+except ValidationError as e:
+    print(f"{e}\n")
+```
+
+- 检查文件名
+
+```python
+from pathvalidate import is_valid_filename, sanitize_filename
+
+fname = "fi:l*e/p\"a?t>h|.t<xt"
+print(f"is_valid_filename('{fname}') return {is_valid_filename(fname)}\n")
+
+sanitized_fname = sanitize_filename(fname)
+print(f"is_valid_filename('{sanitized_fname}') return {is_valid_filename(sanitized_fname)}\n")
+```
+
+- 用于 `argparse` 的文件名验证器
+
+```python
+from argparse import ArgumentParser
+
+from pathvalidate.argparse import validate_filename_arg, validate_filepath_arg
+
+parser = ArgumentParser()
+parser.add_argument("--filename", type=validate_filename_arg)
+parser.add_argument("--filepath", type=validate_filepath_arg)
+options = parser.parse_args()
+
+if options.filename:
+    print(f"filename: {options.filename}")
+
+if options.filepath:
+    print(f"filepath: {options.filepath}")
+```
+
+- 用于 `argparse` 的文件路径验证器
+
+```python
+from argparse import ArgumentParser
+
+from pathvalidate.argparse import sanitize_filename_arg, sanitize_filepath_arg
+
+
+parser = ArgumentParser()
+parser.add_argument("--filename", type=sanitize_filename_arg)
+parser.add_argument("--filepath", type=sanitize_filepath_arg)
+options = parser.parse_args()
+
+if options.filename:
+    print("filename: {}".format(options.filename))
+
+if options.filepath:
+    print("filepath: {}".format(options.filepath))
+```
+
+
+
 ## Gradio 快速生成AI应用的UI服务
 
 https://www.gradio.app/
