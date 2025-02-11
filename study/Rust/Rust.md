@@ -875,14 +875,69 @@ fn main() {
 
     - 多个可变引用是可以的（不可变引用要在可变引用后restc E0502）
 
+    - `ref` 模式
+
+        ```rust
+        #[derive(Clone, Copy)]
+        struct Point { x: i32, y: i32 }
+        
+        fn main() {
+            let c = 'Q';
+        
+            // 赋值语句中左边的 `ref` 关键字等价于右边的 `&` 符号。
+            let ref ref_c1 = c;
+            let ref_c2 = &c;
+        
+            println!("ref_c1 equals ref_c2: {}", *ref_c1 == *ref_c2);
+        
+            let point = Point { x: 0, y: 0 };
+        
+            // 在解构一个结构体时 `ref` 同样有效。
+            let _copy_of_x = {
+                // `ref_to_x` 是一个指向 `point` 的 `x` 字段的引用。
+                let Point { x: ref ref_to_x, y: _ } = point;
+        
+                // 返回一个 `point` 的 `x` 字段的拷贝。
+                *ref_to_x
+            };
+        
+            // `point` 的可变拷贝
+            let mut mutable_point = point;
+        
+            {
+                // `ref` 可以与 `mut` 结合以创建可变引用。
+                let Point { x: _, y: ref mut mut_ref_to_y } = mutable_point;
+        
+                // 通过可变引用来改变 `mutable_point` 的字段 `y`。
+                *mut_ref_to_y = 1;
+            }
+        
+            println!("point is ({}, {})", point.x, point.y);
+            println!("mutable_point is ({}, {})", mutable_point.x, mutable_point.y);
+        
+            // 包含一个指针的可变元组
+            let mut mutable_tuple = (Box::new(5u32), 3u32);
+        
+            {
+                // 解构 `mutable_tuple` 来改变 `last` 的值。
+                let (_, ref mut last) = mutable_tuple;
+                *last = 2u32;
+            }
+        
+            println!("tuple is {:?}", mutable_tuple);
+        }
+        ```
+  
+        
+  
   - 悬空引用（Dangling References）
-
+  
     - 悬空指针：一个指针引用了内存中的某个地址，而这块内存肯已经释放并分配给其他人使用了
-
+  
     - 在Rust里，编译器可以保证引用永远不是悬空引用
-
+  
       - 编译器将保证在引用离开作用域前数据不会离开作用域
-
+  
         ```rust
         fn main() {
             let r = dangle();
@@ -895,9 +950,9 @@ fn main() {
             return &s;
         }
         ```
-
+  
   - 引用规则
-
+  
     - 在任何给定的时刻，只能满足下列条件之一
       - 一个可变的引用
       - 任意数量的不可变引用
