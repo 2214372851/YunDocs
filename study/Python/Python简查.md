@@ -1,5 +1,152 @@
 # Python 技巧与库
 
+## 虚拟内存映射文件
+
+在处理大型文件时，传统的文件操作（如使用 `open()` 读取整个文件到内存）可能会导致内存消耗过大，尤其是在内存资源有限的情况下。Python 的 `mmap` 模块提供了一种高效的解决方案，它允许你将文件映射到内存中进行操作，而无需将整个文件加载到内存中。通过这种方式，你可以按需读取文件内容，避免了不必要的内存占用。
+
+本文将介绍 Python 中如何使用 `mmap` 模块，特别是针对大文件（如 JSON 文件）的读取，并提供相应的示例。
+
+------
+
+### 1. `mmap` 模块概述
+
+Python 的 `mmap` 模块提供了内存映射文件的方法，允许程序将文件的一部分或全部映射到内存中，从而可以像访问普通内存一样访问文件内容。这种方法的最大优点是，它不会一次性将文件加载到内存，而是通过操作系统的虚拟内存管理，按需加载文件内容。这对于处理大文件（尤其是当文件非常大时）非常有效。
+
+`mmap` 模块支持对文件的读取、修改和搜索操作，甚至可以与进程间的通信机制一起使用。接下来，我们将介绍如何使用 `mmap` 模块来读取大文件（如 JSON 文件）并解析其内容。
+
+------
+
+### 2. 使用 `mmap` 读取大文件
+
+在使用 `mmap` 读取文件时，首先需要将文件映射到内存中。这可以通过文件对象的 `fileno()` 方法获取文件描述符，然后使用 `mmap` 创建内存映射对象。下面是一个使用 `mmap` 模块读取文件的基本示例：
+
+#### 示例：基本的 `mmap` 使用
+
+```python
+import mmap
+
+# 打开文件并创建内存映射
+with open('example.txt', 'r+b') as f:
+    # 创建内存映射对象，mmap(size, access)
+    mm = mmap.mmap(f.fileno(), 0)  # 使用0表示映射整个文件
+    
+    # 访问映射的内容
+    print(mm[:10])  # 打印前10个字节
+    mm.close()  # 关闭映射
+```
+
+在这个示例中，`mmap` 创建了一个内存映射对象 `mm`，可以像操作内存一样访问文件的前 10 个字节。
+
+------
+
+### 3. 读取大 JSON 文件的示例
+
+在实际应用中，JSON 文件通常包含大量数据，使用传统方法一次性加载整个文件可能会导致内存不足。通过 `mmap`，你可以按需读取文件内容，节省内存。
+
+#### 示例：使用 `mmap` 读取大 JSON 文件
+
+假设我们有一个大 JSON 文件 `large_file.json`，其内容可能如下所示：
+
+```json
+{
+  "name": "John",
+  "age": 30,
+  "city": "New York"
+}
+```
+
+以下是使用 `mmap` 读取该 JSON 文件并解析其内容的示例：
+
+```python
+import mmap
+import json
+
+# 假设大文件路径为 'large_file.json'
+file_path = 'large_file.json'
+
+# 使用 mmap 打开大文件
+with open(file_path, 'r') as f:
+    # 创建内存映射对象
+    mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+    
+    # 通过 mmap 读取 JSON 数据
+    json_data = json.loads(mm.decode())  # 将字节数据解码为字符串，然后转换为 JSON
+    
+    # 打印读取的 JSON 数据
+    print(json_data)
+
+    # 关闭内存映射
+    mm.close()
+```
+
+在这个示例中：
+
+1. 我们使用 `mmap` 将文件 `large_file.json` 映射到内存中。
+2. 通过 `mm.decode()` 将字节数据解码为字符串。
+3. 使用 `json.loads()` 解析 JSON 字符串并加载为 Python 字典对象。
+
+这种方法的优点是：
+
+- **内存效率**：通过 `mmap`，文件内容是按需加载的，不会一次性将整个文件读入内存。这对于处理大型 JSON 文件尤为重要，可以显著降低内存消耗。
+- **直接内存访问**：程序可以直接操作内存中的数据，这使得读取速度较传统方法更快。
+
+------
+
+### 4. 其他常见操作：写入、搜索和截断
+
+#### 写入数据
+
+通过 `mmap`，你不仅可以读取文件，还可以修改文件的内容。例如，以下代码展示了如何修改文件的内容：
+
+```python
+import mmap
+
+with open('example.txt', 'r+b') as f:
+    mm = mmap.mmap(f.fileno(), 0)
+    mm[0:4] = b'Hello'  # 修改文件的前4个字节
+    mm.close()
+```
+
+#### 搜索和修改内容
+
+你可以利用 `find` 方法查找文件中的内容，并在映射内存中直接修改它：
+
+```python
+import mmap
+
+with open('example.txt', 'r+b') as f:
+    mm = mmap.mmap(f.fileno(), 0)
+    
+    # 查找字符串
+    pos = mm.find(b'old_text')
+    if pos != -1:
+        mm[pos:pos+len(b'old_text')] = b'new_text'  # 替换内容
+    
+    mm.close()
+```
+
+#### 文件截断
+
+通过 `mmap`，你可以截断文件，即删除文件中的一部分内容：
+
+```python
+import mmap
+
+with open('example.txt', 'r+b') as f:
+    mm = mmap.mmap(f.fileno(), 0)
+    mm.resize(10)  # 截断文件至10个字节
+    mm.close()
+```
+
+------
+
+### 5. 总结
+
+Python 的 `mmap` 模块提供了一种高效处理大文件的方式，尤其在内存受限的情况下。通过 `mmap`，文件可以被映射到内存，按需加载文件内容，避免了一次性将文件全部读取到内存。它非常适用于大文件的读取、修改、搜索和截断等操作。在读取 JSON 等大型文件时，`mmap` 使得文件内容能够被高效地解析而不会消耗过多的内存。
+
+
+
+
 ## `pathvalidate` 路径消毒校验
 
 > PathValidate是一个Python库，可以对诸如文件名/文件路径/等的字符串进行消毒/验证。
@@ -2629,43 +2776,1557 @@ if list:
     pass
 ```
 
-## OS模块
+## Time 时间模块
+
+Time模块是通过调用C库实现的,所以有些方法在某些平台上可能无法调用,但是其提供的大部分接口与C标准库time.h基本一致,尽管此模块始终可用,但并非所有平台上都提供所有功能,此模块中定义的大多数函数调用具有相同名称的平台C库函数,因为这些函数的语义因平台而异.
 
 ```python
-#当前使用的平台 win=>nt Linux/Unix=>posix
-os.name
-#当前工作目录
-os.getcwd()
-#返回指定目录下所有文件和文件名
-os.listdir('./')
-#删除一个文件
-os.remove('./')
-#运行shell命令
-os.system('cmd/shell')
-#获取路径分割符
-os.sep
-#返回一个文件的目录和文件名
-os.path.split('c:\\xxx\\xxx.txt')
-#判断一个路径是文件还是目录
-os.path.isfile('c:\\xxx\\xxx.txt')
-os.path.isdir('c:\\xxx\\xxx.txt')
-#判断一个路径是否存在
-os.path.exists('c:\\xxx\\xxx.txt')
-#获取绝对路径
-os.path.abspath('xxx.txt')
-#规范path字符串形式
-os.path.normpath('c:\\xxx\\xxx.txt')
-#获取文件大小
-os.path.getsize('c:\\xxx\\xxx.txt')
-#分离文件名与拓展名
-os.path.splitext('xxx.txt')
-#拼接路径,其中一个有/那么之前的全忽略
-os.path.join('home','name')
-#返回文件名
-os.path.basename('c:\\xxx\\xxx.txt')
-#返回文件路径
-os.path.dirname('c:\\xxx\\xxx.txt')
+import time
+
+time.sleep(4)                                    #暂停程序执行4秒
+time.clock()                                     #返回处理器时间
+time.process_time()                              #返回处理器时间
+time.time()                                      #返回当前系统时间戳
+time.ctime()                                     #当前系统时间,输出字符串格式化
+time.ctime(time.time()-86640)                    #将时间戳转为字符串格式
+time.gmtime()                                    #获取结构化时间
+time.gmtime(time.time()-86640)                   #将时间戳转换成结构化格式
+time.localtime(time.time()-86640)                #将时间戳转换成结构格式,但返回本地时间
+time.mktime(time.localtime())                    #与localtime()功能相反,将结构时间转换为时间戳
+time.strftime("%Y-%m-%d %H:%M:%S",time.gmtime()) #将struct_time格式转成指定的字符串格式
+time.strptime("2019-09-20","%Y-%m-%d")           #将字符串格式转换成struct_time格式
 ```
+
+## DataTime 模块
+
+DateTime模块提供了处理日期和时间的类,既有简单的方式,又有复杂的方式,它虽然支持日期和时间算法,但其实现的重点是为输出格式化和操作提供高效的属性提取功能,该模块提供了以简单和复杂的方式操作日期和时间的类,虽然支持日期和时间算法,但实现的重点是有效的属性提取,用于输出格式和操作.
+
+```python
+import datetime
+
+datetime.date.today()                             #格式化输出今天时间
+datetime.datetime.now()                           #格式化输出当前的时间
+datetime.datetime.now().timetuple()               #以struct_time格式输出当前时间
+datetime.date.fromtimestamp(time.time()-864400)   #将时间戳转成日期格式
+#-----------------------------------------------------------------------------------
+temp = datetime.datetime.now()                    #输出当前时间,并赋值给变量
+temp.replace(2019,10,10)                          #替换输出内容中的,年月日为2019-10-10
+#-----------------------------------------------------------------------------------
+#时间替换关键字:<[year,month,day,hour,minute,second,microsecond,tzinfo>
+str_to_date = datetime.datetime.strptime("19/10/05 12:30", "%y/%m/%d %H:%M") #将字符串转换成日期格式
+new_date = datetime.datetime.now() + datetime.timedelta(days=10)             #在当前基础上加10天
+new_date = datetime.datetime.now() + datetime.timedelta(days=-10)            #在当前基础上减10天
+new_date = datetime.datetime.now() + datetime.timedelta(hours=-10)           #在当前基础上减10小时
+new_date = datetime.datetime.now() + datetime.timedelta(seconds=120)         #在当前基础上加120秒
+```
+
+格式替换
+
+```python
+In [24]: from datetime import datetime,time,date
+
+In [25]: import pytz
+#查看中国时区
+In [26]: pytz.country_timezones('cn')
+Out[26]: ['Asia/Shanghai', 'Asia/Urumqi']
+#创建中国时区对象
+In [28]: tz = pytz.timezone('Asia/Shanghai')
+#创建时间对象时指定时区
+In [29]: datetime.now(tz)
+Out[29]: datetime.datetime(2018, 11, 16, 13, 32, 59, 744669, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>)
+#指定时区创建日期对象
+In [30]: datetime(2018,11,16,tzinfo=tz)
+Out[30]: datetime.datetime(2018, 11, 16, 0, 0, tzinfo=<DstTzInfo 'Asia/Shanghai' LMT+8:06:00 STD>)
+#指定时区创建时间对象
+In [31]: time(13,33,00,tzinfo=tz)
+Out[31]: datetime.time(13, 33, tzinfo=<DstTzInfo 'Asia/Shanghai' LMT+8:06:00 STD>)
+#本地化时间对象
+In [33]: tz.localize(datetime.now())
+Out[33]: datetime.datetime(2018, 11, 16, 13, 41, 28, 395602, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>)
+#创建本地化时间对象
+In [34]: loc_d = tz.localize(datetime.now())
+#通过本地化时间对象转化为其他时区时间
+In [35]: loc_d.astimezone(pytz.timezone('America/New_York'))
+Out[35]: datetime.datetime(2018, 11, 16, 0, 42, 43, 666067, tzinfo=<DstTzInfo 'America/New_York' EST-1 day, 19:00:00 STD>)
+#转换为UTC时间对象
+In [36]: loc_d.astimezone(pytz.utc)
+Out[36]: datetime.datetime(2018, 11, 16, 5, 42, 43, 666067, tzinfo=<UTC>)
+
+In [37]: loc_d
+Out[37]: datetime.datetime(2018, 11, 16, 13, 42, 43, 666067, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>)
+
+In [38]: utc_d = loc_d.astimezone(pytz.utc)
+
+In [39]: print(utc_d)
+2018-11-16 05:42:43.666067+00:00
+#将UTC时间转换为合适的时区
+In [40]: later_utc = utc_d + timedelta(minutes=30)
+
+In [41]: print(later_utc.astimezone(tz))
+2018-11-16 14:12:43.666067+08:00
+```
+
+日期互转
+
+```python
+#encode=utf-8
+from datetime import datetime,timedelta
+
+weekdays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+
+def get_previous_byday(dayname,start_date=None):
+    if start_date is None:
+        start_date = datetime.today()  #获取当前时间
+
+    day_num = start_date.weekday() #获取时间的星期
+    day_num_target = weekdays.index(dayname) #获取查询星期
+    days_ago = (7 + day_num - day_num_target) % 7  #获取日期差的天数
+    if days_ago == 0:
+        days_ago = 7
+    target_date = start_date - timedelta(days=days_ago) #计算时间差
+    return target_date
+
+
+print('现在时间：',datetime.today())
+print(get_previous_byday('Monday'))
+```
+
+## Shutil 压缩模块
+
+该shutil模块对文件和文件集合提供了许多高级操作,特别是,提供了支持文件复制和删除的功能,特别针对文件拷贝和删除,主要功能为目录和文件操作以及压缩操作Shutil模块也是Python中默认自带的标准库.
+
+**文件拷贝(1):** 将`/etc/passwd`文件中的内容,拷贝到`/tmp/passwd`文件中去.
+
+```python
+>>> import shutil
+>>>
+>>> shutil.copyfileobj(open("/etc/passwd","r"),open("/tmp/passwd","w"))
+```
+
+**文件拷贝(2):** 将`/etc/passwd`文件中的内容,拷贝到`/tmp/passwd`文件中去,且目标文件无需存在.
+
+```python
+>>> import shutil
+>>>
+>>> shutil.copyfile("/etc/passwd","/tmp/passwd")
+```
+
+**递归拷贝:** 递归拷贝`/etc`目录下的所有文件,拷贝到`/tmp`目录下,目标目录不能存在,ignore的意思是排除.
+
+```python
+>>> import shutil
+>>>
+>>> shutil.copytree("/etc","/tmp", ignore=shutil.ignore_patterns('*.conf', 'tmp*'))
+```
+
+**递归删除:** 递归删除`/etc`文件夹中的所有内容.
+
+```python
+>>> import shutil
+>>>
+>>> shutil.rmtree("/etc")
+```
+
+**文件移动:** 实现文件的移动,或者是给文件重命名.
+
+```python
+>>> import shutil
+>>>
+>>> shutil.move("file1","file2")
+```
+
+**文件归档:** 实现将`/etc/`下的文件打包放置`/home/`目录下面.
+
+```python
+>>> import shutil
+>>>
+>>> ret = shutil.make_archive("/etc/","gztar",root_dir='/home/')
+```
+
+**ZIP文件压缩:** 通过ZipFile模块,压缩指定目录下的指定文件.
+
+```python
+>>> import zipfile
+>>>
+# 压缩
+>>> z = zipfile.ZipFile('lyshark.zip', 'w')
+>>> z.write('lyshark.log')
+>>> z.write('data.data')
+>>> z.close()
+
+# 解压
+>>> z = zipfile.ZipFile('lyshark.zip', 'r')
+>>> z.extractall()
+>>> z.close()
+```
+
+**TAR文件压缩:** 通过TarFile模块,压缩指定目录下的指定文件.
+
+```python
+>>> import tarfile
+>>>
+# 压缩
+>>> tar = tarfile.open('your.tar','w')
+>>> tar.add('/bbs2.log', arcname='bbs2.log')
+>>> tar.add('/cmdb.log', arcname='cmdb.log')
+>>> tar.close()
+
+# 解压
+>>> tar = tarfile.open('your.tar','r')
+>>> tar.extractall()  # 可设置解压地址
+```
+
+## Logging 模块
+
+很多程序都有记录日志的需求,并且日志中包含的信息即有正常的程序访问日志,还可能有错误、警告等信息输出,Python的logging模块提供了标准的日志接口,你可以通过它存储各种格式的日志,logging的日志可以分为`debug(),info(),warning(),error(),critical()`,5个级别,下面我们看一下怎么用.
+
+如果只想把日志文件输入到显示器上,则我们可以直接执行以下操作.
+
+```python
+>>> import logging
+>>>
+>>> logging.debug("hello debug")
+>>> logging.warning("hello warning")
+>>> logging.critical("hello critical")
+
+#---输出结果-------------------------------
+DEBUG:root:hello debug
+WARNING:root:hello warning
+CRITICAL:root:hello critical
+```
+
+以上可看到`logging.`后面跟3个不同参数,其实除了以上三种日志等级以外,logging还支持如下几种等级:
+
+| 日志等级 | 日志数字 | 日志信息说明                          |
+| :------: | :------: | :------------------------------------ |
+|  DEBUG   |    10    | 详细信息,通常仅在调试阶段时才有意义   |
+|   INFO   |    20    | 确认事情按预期工作,正常工作时发送     |
+| WARNING  |    30    | 警告等级,表示发生了不可预料的意外     |
+|  ERROR   |    40    | 错误,比警告等级更加严重,软件无法运行  |
+| CRITICAL |    50    | 严重错误,表明程序本身可能无法继续运行 |
+
+如果想把日志等级写入文件的话,只需要在程序启动时指定配置路径即可.
+
+```python
+import logging
+ 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S %p',
+                    filename='test.log',
+                    filemode='w')
+
+#---参数调用-------------------------------
+logging.debug('debug message')
+logging.info('info message')
+logging.warning('warning message')
+logging.error('error message')
+logging.critical('critical message')
+```
+
+日志的`format()`相关格式列表如下所示,以上的配置格式可以随意自定义.
+
+|    格式名称    | 格式的作用                         |
+| :------------: | :--------------------------------- |
+|    %(name)s    | Logger的名字                       |
+|  %(levelno)s   | 数字形式的日志级别                 |
+| %(levelname)s  | 文本形式的日志级别                 |
+|  %(pathname)s  | 调用日志输出函数的模块的完整路径名 |
+|  %(filename)s  | 调用日志输出函数的模块的文件名     |
+|   %(module)s   | 调用日志输出函数的模块名           |
+|  %(funcName)s  | 调用日志输出函数的函数名           |
+|   %(lineno)d   | 调用日志输出函数的语句所在的代码行 |
+|  %(created)f   | 当前时间,用UNIX标准的表示时间      |
+|  %(asctime)s   | 字符串形式的当前时间               |
+|   %(thread)d   | 线程ID,可能没有                    |
+| %(threadName)s | 线程名,可能没有                    |
+|  %(process)d   | 进程ID,可能没有                    |
+|  %(message)s   | 用户输出的消息                     |
+
+其实日志文件的相关功能还很多,包括多文件日志记录功能等,笔者认为这些功能太过于繁琐,在开发中容易混用,掌握上面的常用方法就已经足够,所以不再继续往下延伸了.
+
+## Process 模块
+
+早期的Python版本中,我们主要是通过`os.system()、os.popen().read()`等函数来执行命令行指令的,另外还有一个很少使用的commands模块,但是从现在开始官方文档中建议使用的是subprocess模块,所以os模块和commands模块的相关函数在这里只提供一个简单的使用示例,我们重要要介绍的是subprocess模块.
+
+**使用popen执行命令:** 先来演示一下`os.popen()`函数,来执行一条命令的过程吧.
+
+```python
+>>> import os
+>>>
+>>> temp=os.popen("ls -lh")
+>>> temp
+<open file 'ls -lh', mode 'r' at 0x7fd1d09b35d0>
+>>> temp.read()
+'total 4.0K\n-rw-------. 1 root root 1.2K Dec 20 01:53 anaconda-ks.cfg\n'
+```
+
+**使用call()执行命令:** 接下来通过使用`subprocess.call()`执行一个命令,返回状态码,shell=False,第一个参数必须是列表,shell=True,第一个参数就直接输入命令即可.
+
+```python
+>>> import subprocess
+>>>
+>>> ret = subprocess.call(["ls","-lh"],shell=False)
+>>> print(ret)
+0
+>>> ret = subprocess.call("ls -l", shell=True)
+>>> print(ret)
+0
+```
+
+**使用check_call()检查命令:** 执行命令,如果执行状态码是0,则返回0,否则抛异常.
+
+```python
+>>> import subprocess
+>>>
+>>> ret = subprocess.check_call(["ls", "-l"],shell=False)
+>>> ret = subprocess.check_call("exit 1",shell=True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/usr/lib64/python2.7/subprocess.py", line 542, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command 'exit 1' returned non-zero exit status 1
+```
+
+**使用check_output()检查命令:** 执行命令,如果状态码是0,则返回执行结果否则抛异常,注意这里返回的是字节类型,需要转换.
+
+```python
+>>> import subprocess
+>>>
+>>> ret = subprocess.check_output(["echo", "Hello World!"],shell=False)
+>>> print(str(ret,encoding='utf-8'))
+
+>>> ret = subprocess.check_output("exit 1", shell=True)
+>>> print(str(ret,encoding='utf-8'))
+```
+
+**使用run()运行命令:** python3.5新加的功能,代替os.system,os.spawn.
+
+```python
+>>> import subprocess
+>>> 
+>>> subprocess.run(["ls", "-l"])
+total 56
+-rw-rw-r-- 1 tomcat tomcat    61  8月 11 23:27 a.py
+CompletedProcess(args=['ls', '-l'], returncode=0)
+>>> 
+>>> subprocess.run(["ls", "-l", "/dev/null"], stdout=subprocess.PIPE)
+CompletedProcess(args=['ls', '-l', '/dev/null'], returncode=0, stdout=b'crw-rw-rw- 1 root root 1, 3  8\xe6\x9c\x88 11 09:27 /dev/null\n')
+```
+
+**使用popen()命令:** 此模块并非`os.popen()`而是在subprocess里面的一个模块,用来执行一些复杂操作.
+
+```python
+>>> import subprocess
+>>> 
+>>> p = subprocess.Popen("ls -lh",shell=True,stdout=subprocess.PIPE)
+>>> print(p.stdout.read())
+```
+
+## Urllib 模块
+
+URLlib是Python提供的一个用于操作URL的模块,这个库在我们爬取网页的时候会经常用到,也是很多网站测试,网站状态检测等常用的模块之一,不过一般用来写爬虫的比较多,这里也应该了解一下它的作用.
+
+**快速抓取网页:** 使用urllib最基本的抓取功能,将百度首页的内容保存到本地目录下.
+
+```python
+>>> import urllib.request
+>>>
+>>> res=urllib.request.urlopen("https://www.baidu.com")
+>>> print(res.read().decode("utf-8"))
+
+>>> f=open("./test.html","wb")      #保存在本地
+>>> f.write(res.read())
+>>> f.close()
+```
+
+**实现POST请求:** 上述的例子是通过请求百度的get请求获得百度,下面使用urllib的post请求.
+
+```python
+>>> import urllib.parse
+>>> import urllib.request
+>>>
+>>> data=bytes(urllib.parse.urlencode({"hello":"lyshark"}),encoding="utf-8")
+>>> print(data)
+>>> response = urllib.request.urlopen('http://www.baidu.com/post',data=data)
+>>> print(response.read())
+```
+
+**设置TIMEOUT时间:** 我们需要给请求设置一个超时时间,而不是让程序一直在等待结果.
+
+```python
+import urllib.request
+
+response = urllib.request.urlopen('http://www.baidu.com', timeout=1)
+print(response.read())
+```
+
+**获取网站状态:** 我们可以通过status、getheaders(),getheader("server"),获取状态码以及头部信息.
+
+```python
+>>> import urllib.request
+>>>
+>>> res=urllib.request.urlopen("https://www.python.org")
+>>> print(type(res))
+<class 'http.client.HTTPResponse'>
+>>>
+>>> res.status
+>>> res.getheaders()
+>>> res.getheader("server")
+```
+
+**伪装访问网站:** 给请求添加头部信息,从而定制自己请求网站是时的头部信息,防止被和谐.
+
+```python
+from urllib import request,parse
+
+url = 'http://www.baidu.com'
+headers = {
+    'User-Agent': 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
+    'Host': 'mkdirs.org'
+}
+dict = {
+    'name': 'LyShark'
+}
+data = bytes(parse.urlencode(dict), encoding='utf8')
+req = request.Request(url=url, data=data, headers=headers, method='POST')
+response = request.urlopen(req)
+print(response.read().decode('utf-8'))
+```
+
+**URL拼接功能:** 我们以时候,可以拼接一个网页地址,实现下一步的访问.
+
+```python
+>>> from urllib.parse import urljoin
+>>>
+>>> urljoin("http://www.baidu.com","abuot.html")
+'http://www.baidu.com/abuot.html'
+```
+
+## Config 模块
+
+ConfigParser模块用来读取配置文件,配置文件的格式跟windows下的ini配置文件相似,可以包含一个或多个节(section),每个节可以有多个参数(键=值),使用的配置文件的好处就是一些参数无需写死,可以使程序更灵活的配置一些参数.
+
+为了方便演示以下的例子,请在Python所在目录创建一个`test.ini配置文件`,写入以下内容.
+
+```ini
+[db]
+db_host = 127.0.0.1
+db_port = 69
+db_user = root
+db_pass = 123123
+host_port = 69
+
+[concurrent]
+thread = 10
+processor = 20
+```
+
+**获取所有节点:** 通过使用以下方式,我们可以获取到指定文件的所有主节点名称.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+>>>
+>>> result=config.sections()
+>>> print(result)
+['db', 'concurrent']
+```
+
+**获取指定键值:** 使用以下方式遍历,来获取`指定节点(concurrent)`下的所有键值对.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+>>>
+>>> result=config.items("concurrent")
+>>> print(result)
+[('thread', '10'), ('processor', '20')]
+```
+
+**获取指定键:** 使用以下方式遍历,来获取`指定节点(concurrent)`下的所有的键.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+>>>
+>>> result=config.options("concurrent")
+>>> print(result)
+['thread', 'processor']
+```
+
+**获取指定值:** 使用以下方式遍历,来获取`指定节点下指定键`的对应值.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+>>>
+>>> result=config.get("concurrent","thread")
+# result = config.getint("concurrent","thread")
+# result = config.getfloat("concurrent","thread")
+# result = config.getboolean("concurrent","thread")
+>>> print(result)
+10
+```
+
+**检查&添加&删除主节点:** 检查、添加、删除指定的主节点数据.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+
+#--检查主节点---------------------------------------------
+>>> has_sec=config.has_section("db")
+>>> print(has_sec)
+True
+#--添加主节点---------------------------------------------
+>>> config.add_section("lyshark")
+>>> config.write(open("test.ini","w"))
+#--删除主节点---------------------------------------------
+>>> config.remove_section("lyshark")
+True
+>>> config.write(open("test.ini","w"))
+```
+
+**检查&添加&删除指定键值对:** 检查、删除、设置指定组内的键值对.
+
+```python
+>>> import configparser
+>>> 
+>>> config=configparser.ConfigParser()
+>>> config.read("test.ini",encoding="utf-8")
+
+#--检查节点中的键值对--------------------------------------
+>>> has_opt=config.has_option("db","db_host")
+>>> print(has_opt)
+True
+#--设置节点中的键值对--------------------------------------
+>>> config.set("test.ini","db_host","8888888888")
+>>> config.write(open("test.ini","w"))
+#--删除节点中的键值对--------------------------------------
+>>> config.remove_option("db","db_host")
+True
+>>> config.write(open("test.ini","w"))
+```
+
+## JSON 模块
+
+JSON(JavaScript Object Notation),是一种轻量级的数据交换格式,它基于 ECMAScript(欧洲计算机协会制定的js规范)的一个子集,采用完全独立于编程语言的文本格式来存储和表示数据,简洁和清晰的层次结构使得JSON成为理想的数据交换语言,易于人阅读和编写,同时也易于机器解析和生成,并有效地提升网络传输效率,JSON实现了字符串和编程语言之间的数据共享与交互,通用各种编程语言中,JSON模块提供了四个功能:`dumps、dump、loads、load`下面将详细介绍它的应用场景.
+
+**dumps():** 将Python的基本数据类型转化成字符串形式.
+
+```python
+>>> import json
+>>>
+>>> dic={"admin":"123","lyshark":"123123"}
+>>>
+>>> print(dic,type(dic))
+{'admin': '123', 'lyshark': '123123'} <class 'dict'>
+>>>
+>>> result=json.dumps(dic)
+>>> print(result,type(result))
+{"admin": "123", "lyshark": "123123"} <class 'str'>
+```
+
+**loads():** 将Python字符串形式转化成基本数据类型.
+
+```python
+>>> import json
+>>>
+>>> string='{"key":"value"}'
+>>> print(string,type(string))
+{"key":"value"} <class 'str'>
+
+>>> dic=json.loads(string)
+>>> print(dic,type(dic))
+{'key': 'value'} <class 'dict'>
+```
+
+**dump():** 先将指定数据序列化,然后再写入文件中,持久化存储,一步到位.
+
+```python
+>>> import json
+>>>
+>>> lists=[1,2,3,4,5,6,7,8,9,10]
+>>> lists
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+>>>
+>>> json.dump(lists,open("db.json","w",encoding="utf-8"))
+
+>>> f=open("db.json","w")
+>>> json.dump(lists,f)
+```
+
+**load():** 读取一个序列文件,将其中的内容加载,反序列化到程序中.
+
+```python
+>>> import json
+>>>
+>>> lists=json.load(open("db.json","r",encoding="utf-8"))
+>>> lists
+'{"admin": "123123", "guest": "456789"}'
+```
+
+## XML 模块
+
+XML可扩展标记语言,XML的宗旨传输数据的,XML是实现不同语言或程序之间进行数据交换的协议,XML是目前数据交换的唯一公共语言,跟json差不多,但json使用起来更简单,不过,在json还没诞生的黑暗年代,大家只能选择用xml,至今很多传统公司如金融行业的很多系统的接口还主要是XML作为数据通信接口,如下我们就来学习一下这个模块的使用吧.
+
+为了方便演示后续内容,请自行在Python当前目录下创建`lyshark.xml`以下XML文档.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+    <country name="Liechtenstein">
+        <rank updated="yes">2</rank>
+        <year>2019</year>
+        <gdppc>141100</gdppc>
+        <neighbor direction="E" name="Austria" />
+        <neighbor direction="W" name="Switzerland" />
+    </country>
+    <country name="Singapore">
+        <rank updated="yes">5</rank>
+        <year>2020</year>
+        <gdppc>59900</gdppc>
+        <neighbor direction="N" name="Malaysia" />
+    </country>
+    <country name="Panama">
+        <rank updated="yes">69</rank>
+        <year>2029</year>
+        <gdppc>13600</gdppc>
+        <neighbor direction="W" name="Costa Rica" />
+        <neighbor direction="E" name="Colombia" />
+    </country>
+</data>
+```
+
+**创建XML文档:** 通过使用XML函数,创建一个XML文档,原生保存的XML时默认无缩进.
+
+```python
+<root>
+    <son name="1号儿子">
+        <grand name="1号孙子"></grand>
+    </son>
+    <son name="2号儿子">
+        <grand name="2号孙子"></grand>
+    </son>
+</root>
+#--以下代码则可创建如上格式-------------------------------------------------
+>>> import xml.etree.ElementTree as ET
+>>>
+>>> root=ET.Element("root")
+>>>
+>>> son1=ET.Element("son",{"name":"1号儿子"})
+>>> son2=ET.Element("son",{"name":"2号儿子"})
+>>>
+>>> grand1=ET.Element("grand",{"name":"1号孙子"})
+>>> grand2=ET.Element("grand",{"name":"2号孙子"})
+>>>
+>>> son1.append(grand1)
+>>> son2.append(grand2)
+>>>
+>>> root.append(son1)
+>>> root.append(son2)
+>>>
+>>> tree=ET.ElementTree(root)
+>>> tree.write('lyshark.xml',encoding='utf-8',short_empty_elements=False)
+```
+
+**打开XML文档:** 通过使用`xml.etree.ElementTree`,来实现打开要XML文件.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree = ET.parse("lyshark.xml")
+>>> root = tree.getroot()
+>>> print(root.tag)
+```
+
+**遍历XML文档(单层):** 通过使用循环的方式,来实现对XML文件子树的遍历.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree=ET.parse("lyshark.xml")
+>>> root=tree.getroot()
+>>>
+>>> for child in root:
+...     print(child.tag,child.attrib)
+...
+country {'name': 'Liechtenstein'}
+country {'name': 'Singapore'}
+country {'name': 'Panama'}
+```
+
+**遍历XML文档(多层):** 通过使用循环的方式遍历`root`下面的目录,来实现对XML文件子树的子树进行遍历.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree=ET.parse("lyshark.xml")
+>>> root=tree.getroot()
+>>>     # 遍历XML文档的第二层
+>>> for x in root:
+        # 第二层节点的标签名称和标签属性
+...     print("主目录: %s"%x.tag)
+        # 遍历XML文档的第三层
+...     for y in x:
+        # 第三层节点的标签名称和内容
+...             print(y.tag,y.attrib,y.text)
+...
+主目录: country
+rank {'updated': 'yes'}
+year {}
+gdppc {}
+neighbor {'direction': 'E', 'name': 'Austria'}
+neighbor {'direction': 'W', 'name': 'Switzerland'}
+主目录: country
+rank {'updated': 'yes'}
+year {}
+gdppc {}
+neighbor {'direction': 'N', 'name': 'Malaysia'}
+主目录: country
+rank {'updated': 'yes'}
+year {}
+gdppc {}
+neighbor {'direction': 'W', 'name': 'Costa Rica'}
+neighbor {'direction': 'E', 'name': 'Colombia'}
+```
+
+**遍历指定节点:** 通过循环的方式,配合`root.iter()`来实现只遍历XML文档中的year节点.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree=ET.parse("lyshark.xml")
+>>> root=tree.getroot()
+>>>
+>>> for node in root.iter("year"):
+...     print(node.tag,node.text)
+...
+year 2019
+year 2020
+year 2029
+```
+
+**修改XML字段:** 通过遍历的方式,找到节点为`year`的数据行,并将其内容`自动加1`,并会写到XML文档.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree=ET.parse("lyshark.xml")
+>>> root=tree.getroot()
+>>>
+>>> for node in root.iter("year"):     #遍历并修改每个字段内容
+...     new_year=int(node.text) + 1    #先将node.text变成整数,实现加法
+...     node.text=str(new_year)        #然后变成字符串,复制给内存中的text
+...     node.set("updated","yes")      #在每个year字段上加上一段属性,updated=yes
+...
+>>> tree.write("lyshark.xml")          #回写到配置文件中,覆盖成最新的数据
+>>> del node.attrib["name"]            #删除节点中的指定属性字段
+PYTHON 复制 全屏
+```
+
+**删除XML字段:** 通过遍历的方式,查找所有的`country`节点,并判断如果内部`rank>50`则删除这个`country`节点.
+
+```python
+>>> import xml.etree.ElementTree as ET
+>>> 
+>>> tree=ET.parse("lyshark.xml")
+>>> root=tree.getroot()
+>>>     # 遍历data下的所有country节点
+>>> for country in root.findall("country"):
+        # 获取每一个country节点下rank节点的内容
+...     rank=int(country.find("rank").text)
+...     if rank > 50:
+        # 删除指定country节点
+...             root.remove(country)
+...
+>>> tree.write("output.xml",encoding="utf-8")
+```
+
+## RabbitMQ 模块
+
+RabbitMQ是一个在AMQP基础上完整的,可复用的企业消息系统,他遵循Mozilla Public License开源协议,MQ全称为Message Queue,消息队列(MQ)是一种应用程序对应用程序的通信方法,应用程序通过读写出入队列的消息(针对应用程序的数据)来通信,而无需专用连接来链接它们.消息传递指的是程序之间通过在消息中发送数据进行通信,而不是通过直接调用彼此来通信,直接调用通常是用于诸如远程过程调用的技术.排队指的是应用程序通过队列来通信,队列的使用除去了接收和发送应用程序同时执行的要求,说的笼统点是queue+socket实现.
+
+### MQ的基础应用
+
+如果启动了多个消费者,那么他们之间是串行获取数据的,也就是说如果1号消费者收不到数据,那么MQ将默认发送给2号消费者,以此类推,如果全部消费者不在线,那么MQ会默认存储这个消息,直到有消费者上线,MQ就会将消息发送给指定的消费者.
+
+**生产者:**
+
+```python
+import pika
+
+conn = pika.BlockingConnection(pika.ConnectionParameters
+                               (host="192.168.1.5",port="5672")    #指定连接地址
+            )
+print("链接消息:",conn)
+
+channel = conn.channel()
+channel.queue_declare(queue="lyshark")
+
+while True:
+    temp =input("发送数据:").strip()
+    channel.basic_publish(exchange="",routing_key="lyshark",body=temp)
+
+conn.close()
+```
+
+**消费者:**
+
+```python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters
+                                    (host='192.168.1.5',port="5672")
+            )
+
+channel = connection.channel()
+channel.queue_declare(queue='lyshark')
+
+def callback(ch,method,properties,body):
+    print("接收的数据: %r" %body)
+
+channel.basic_consume(callback,         #消息来到后,调用callback回调函数.
+                      queue='lyshark',  #指定消息队列名称
+                      no_ack=True)      # 如果=True,则消息发送中间中断后会自动保存下来.
+                                        # 下一次客户端上线后会自动的接受消息
+
+print("==========准备接收消息==========")
+channel.start_consuming()              #循环接收消息
+```
+
+
+
+### 消息的持久化
+
+如果服务器端被强制关闭了,我们的消息就丢失了,那就需要我们对服务器端的数据做一个持久化处理.
+
+在每次声明队列的时候加上`durable=True 队列持久化`,`delivery_mode =2 消息持久化`
+也就是开启持久化的意思,必须客户端服务端都要写上.
+
+**生产者:**
+
+```python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='192.168.1.5'))
+channel = connection.channel()
+
+channel.queue_declare(queue='hello', durable=True)
+channel.basic_publish(exchange='',
+                      routing_key='hello',
+                      body='Hello World!',
+                      properties=pika.BasicProperties(delivery_mode=2, ))  # 发布时设置delivery_mode=2,数据持久化
+print(" [x] Sent 'Hello World!'")
+connection.close()
+```
+
+**消费者:**
+
+```python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='192.168.1.5'))
+channel = connection.channel()
+
+channel.queue_declare(queue='hello', durable=True)
+
+def callback(ch, method, properties, body):
+    print("返回数据: %r" % body)
+    import time
+    #time.sleep(10)
+    print("完成...")
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
+channel.basic_consume(callback,
+                      queue='hello',
+                      no_ack=False)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
+```
+
+
+
+### 消息发布订阅
+
+如上的配置方式,MQ只能将消息发送给一个消费者手里,有时候我们想给所有的消费者发送消息,那就需要使用广播的方式给所有的客户端发送消息的分发,MQ支持消息的公平分发,之前的例子都基本都是1对1的消息发送和接收,即消息只能发送到指定的queue里,但有些时候你想让你的消息被所有的Queue收到,类似广播的效果,这时候就要用到exchange了,exchange在定义的时候是有类型的,以决定到底是哪些Queue符合条件,可以接收消息.
+
+**发布者(fanout广播模式):** 指定发布者为广播模式,所有bind到此exchange的queue都可以接收到服务端发送的消息.
+
+```python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host="192.168.1.5"))
+channel = connection.channel()
+
+channel.exchange_declare(exchange="logs",
+                         exchange_type="fanout"          #指定使用广播模式
+                         )
+
+message = "info:hello lyshark"   #指定发送的消息
+
+channel.basic_publish(exchange="logs",
+                      routing_key="",         #不绑定队列,因为是广播模式
+                      body = message          #要发送的消息
+                      )
+
+print("发送消息: %r"%message)
+connection.close()
+```
+
+**订阅者(fanout广播模式):** 订阅者修改让其随机生成队列名称,你可以启动多个订阅者来看其执行效果.
+
+```python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host="192.168.1.5"))
+channel = connection.channel()
+
+channel.exchange_declare(exchange="logs",exchange_type="fanout")   #指定为广播模式
+
+result = channel.queue_declare(exclusive=True)        #不指定queue名字,rabbit会随机分配一个名字
+queue_name = result.method.queue                      #返回这个随机生成的名字.
+channel.queue_bind(exchange="logs",queue=queue_name)  #绑定随机生成的名字
+
+print("==========接收数据==========")
+def callback(ch, method, properties, body):
+    print("收到的数据: %r" %body)
+
+channel.basic_consume(callback,queue=queue_name,no_ack=True)
+channel.start_consuming()
+```
+
+
+
+### 选择发布订阅
+
+RabbitMQ还支持根据关键字发送,即：队列绑定关键字,发送者将数据根据关键字发送到消息exchange,exchange根据关键字判定应该将数据发送至指定队列,direct模式通过routingKey和exchange决定的那个唯一的queue可以接收消息.
+
+**发布者(direct模式):**
+
+```python
+import pika
+import sys
+ 
+connection = pika.BlockingConnection(pika.ConnectionParameters(
+        host='localhost'))
+channel = connection.channel()
+ 
+channel.exchange_declare(exchange='direct_logs',
+                         type='direct')
+ 
+severity = sys.argv[1] if len(sys.argv) > 1 else 'info'
+message = ' '.join(sys.argv[2:]) or 'Hello World!'
+channel.basic_publish(exchange='direct_logs',
+                      routing_key=severity,
+                      body=message)
+print(" [x] Sent %r:%r" % (severity, message))
+connection.close()
+```
+
+**发布者(direct模式):**
+
+```python
+import pika
+import sys
+ 
+connection = pika.BlockingConnection(pika.ConnectionParameters(
+        host='localhost'))
+channel = connection.channel()
+ 
+channel.exchange_declare(exchange='direct_logs',
+                         type='direct')
+ 
+result = channel.queue_declare(exclusive=True)
+queue_name = result.method.queue
+ 
+severities = sys.argv[1:]
+if not severities:
+    sys.stderr.write("Usage: %s [info] [warning] [error]\n" % sys.argv[0])
+    sys.exit(1)
+ 
+for severity in severities:
+    channel.queue_bind(exchange='direct_logs',
+                       queue=queue_name,
+                       routing_key=severity)
+ 
+print(' [*] Waiting for logs. To exit press CTRL+C')
+ 
+def callback(ch, method, properties, body):
+    print(" [x] %r:%r" % (method.routing_key, body))
+ 
+channel.basic_consume(callback,
+                      queue=queue_name,
+                      no_ack=True)
+ 
+channel.start_consuming()
+```
+
+## Paramiko 模块
+
+paramiko 是一个用于做远程SSH控制的模块,使用该模块可以对远程服务器进行命令或文件操作,值得一说的是,fabric和ansible内部的远程管理就是使用的paramiko来现实,其实它的底层是对ssh的上层代码的一个封装,值得注意的是,由于paramiko模块内部依赖pycrypto,所以先下载安装pycrypto模块.
+
+
+
+### 基于密码认证
+
+**SSHClient:**
+
+```python
+import paramiko
+    
+# 创建SSH对象
+ssh = paramiko.SSHClient()
+# 允许连接不在know_hosts文件中的主机
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# 连接服务器
+ssh.connect(hostname='192.168.1.5',port=22,username='root',password='1233')
+# 执行命令
+stdin,stdout,stderr = ssh.exec_command('ls -lh')
+# 获取命令结果
+result = stdout.read()
+# 关闭连接
+ssh.close()
+```
+
+**Transport:**
+
+```python
+import paramiko
+ 
+transport = paramiko.Transport(('192.168.1.5',22))
+transport.connect(username='root',password='1233')
+ 
+ssh = paramiko.SSHClient()
+ssh._transport = transport
+ 
+stdin, stdout, stderr = ssh.exec_command('ls -lh')
+print stdout.read()
+ 
+transport.close()
+```
+
+
+
+### 基于公钥认证
+
+**SSHClient:**
+
+```python
+import paramiko
+
+private_key = paramiko.RSAKey.from_private_key_file('/root/.ssh/id_rsa')
+
+# 创建SSH对象
+ssh = paramiko.SSHClient()
+# 允许连接不在know_hosts文件中的主机
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# 连接服务器
+ssh.connect(hostname='192.168.1.5',port=22,username='root',key=private_key)
+# 执行命令
+stdin,stdout,stderr = ssh.exec_command('ls -lh')
+# 获取命令结果
+result = stdout.read()
+# 关闭连接
+ssh.close()
+```
+
+**Transport:**
+
+```python
+import paramiko
+
+private_key = paramiko.RSAKey.from_private_key_file('/root/.ssh/id_rsa')
+
+transport = paramiko.Transport(('192.168.1.5',22))
+transport.connect(username='root',pkey=private_key)
+
+ssh = paramiko.SSHClient()
+ssh._transport = transport
+
+stdin,stdout,stderr = ssh.exec_command('ls -lh')
+transport.close()
+```
+
+
+
+### 远程传输文件
+
+**SFTPClient:**
+
+```python
+import paramiko
+
+transport = paramiko.Transport(('192.168.1.5',22))
+transport.connect(username='root',password='1233')
+
+sftp = paramiko.SFTPClient.from_transport(transport)
+
+# 将目录下的location.py 上传至服务器 /tmp/lyshark.py
+sftp.put('./location.py', '/tmp/lyshark.py')
+ 
+# 将remove_path 下载到本地 local_path
+sftp.get('remove_path','local_path')
+   
+transport.close()
+```
+
+**SFTPTransport:**
+
+```python
+import paramiko
+
+private_key = paramiko.RSAKey.from_private_key_file('/root/.ssh/id_rsa')
+
+transport = paramiko.Transport(('192.168.1.5', 22))
+transport.connect(username='root', pkey=private_key )
+
+sftp = paramiko.SFTPClient.from_transport(transport)
+
+# 将location.py 上传至服务器 /tmp/test.py
+sftp.put('/tmp/location.py', '/tmp/test.py')
+
+# 将remove_path 下载到本地 local_path
+sftp.get('remove_path', 'local_path')
+transport.close()
+```
+
+## Random 模块
+
+`Random` 模块实现了一个伪随机数生成器，可用于生成随机数及执行与随机数相关的功能。它支持从范围内生成随机整数、从序列中随机选择元素、生成列表的随机排列、以及用于随机抽样的函数。下面我们来介绍该模块下常用的几个函数。
+
+```python
+import random
+
+# 随机打乱列表元素排列
+random.shuffle()
+
+# 生成 1 到 20 的整数（包括 20）
+random.randint(1, 20)
+
+# 生成 10 到 20 之间的浮点数
+random.uniform(10, 20)
+
+# 生成 1 到 10 的整数（不包括 10）
+random.randrange(1, 10)
+
+# 从序列中随机选择数据
+random.choice()
+```
+
+### 生成随机数
+
+使用 `random.randint()` 函数，可以随机生成整数、字符、大小写字母等。
+
+```python
+import random
+
+# 生成 1 到 10 的随机整数
+print(random.randint(1, 10))  # 示例输出：6
+
+# 生成 100 到 9999 之间的随机整数
+print(random.randint(100, 9999))  # 示例输出：1189
+
+# 随机生成 a-z 字符
+print(chr(random.randint(97, 122)))
+
+# 随机生成 A-Z 字符
+print(chr(random.randint(65, 90)))
+
+# 随机生成 0-9 字符
+print(chr(random.randint(48, 57)))
+```
+
+### 随机打乱数据
+
+使用 `random.shuffle()` 函数，可以随机打乱列表中的数据。
+
+```python
+import random
+
+lists = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+print(lists)  # 输出： [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+random.shuffle(lists)
+print(lists)  # 示例输出： [4, 7, 1, 8, 3, 9, 5, 6, 2]
+```
+
+### 随机弹出数据
+
+使用 `random.choice()` 函数，可以从指定列表中随机弹出一个元素。
+
+```python
+import random
+
+lists = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+string = ["admin", "guest", "lyshark"]
+
+# 从列表中随机选择元素
+print(random.choice(lists))  # 示例输出：2
+print(random.choice(lists))  # 示例输出：5
+
+# 从字符串列表中随机选择元素
+print(random.choice(string))  # 示例输出：'lyshark'
+print(random.choice(string))  # 示例输出：'guest'
+```
+
+### 随机生成验证码
+
+通过 `random.randint()` 函数，结合循环语句和条件语句，可以实现随机生成验证码。
+
+```python
+import random
+
+li = []
+for i in range(6):
+    r = random.randint(0, 4)
+    if r == 2 or r == 4:
+        num = random.randrange(0, 10)
+        li.append(str(num))
+    else:
+        temp = random.randrange(65, 91)
+        c = chr(temp)
+        li.append(c)
+
+# 生成最终的验证码
+result = "".join(li)
+print(result)  # 示例输出：'F3G9H2'
+```
+
+
+
+## Hashlib 模块
+
+Python 里的 `hashlib` 模块提供了许多加密算法，该模块实现了多种不同的安全散列和消息摘要算法的通用接口，包括 FIPS 安全散列算法 SHA1、SHA224、SHA256、SHA384 和 SHA512，以及 RSA 的 MD5 算法。 "安全散列" 和 "消息摘要" 是可互换的，较旧的算法称为消息摘要，现代术语为安全散列。
+
+### MD5 加密
+
+MD5 消息摘要算法是一种广泛使用的密码散列函数，它产生一个 128 位的散列值（hash value）。
+
+```python
+import hashlib
+
+# ######## md5 ########
+hash = hashlib.md5()
+# help(hash.update)  # 了解 update 方法的用法
+hash.update(bytes('admin', encoding='utf-8'))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+print(hash.digest())     # 输出字节形式的哈希值
+```
+
+### SHA1 加密
+
+SHA 安全哈希算法主要适用于数字签名 DSA 算法，SHA1 会产生一个 160 位的消息摘要（已被淘汰）。
+
+```python
+import hashlib
+
+# ######## sha1 ########
+hash = hashlib.sha1()
+hash.update(bytes('admin', encoding='utf-8'))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+```
+
+### SHA256 加密
+
+SHA 安全哈希算法主要适用于数字签名 DSA 算法，SHA256 算法的哈希值大小为 256 位。
+
+```python
+import hashlib
+
+# ######## sha256 ########
+hash = hashlib.sha256()
+hash.update(bytes('admin', encoding='utf-8'))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+```
+
+### SHA384 加密
+
+SHA 安全哈希算法主要适用于数字签名 DSA 算法，SHA384 算法的哈希值大小为 384 位。
+
+```python
+import hashlib
+
+# ######## sha384 ########
+hash = hashlib.sha384()
+hash.update(bytes('admin', encoding='utf-8'))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+```
+
+### SHA512 加密
+
+SHA 安全哈希算法主要适用于数字签名 DSA 算法，SHA512 算法的哈希值大小为 512 位。
+
+```python
+import hashlib
+
+# ######## sha512 ########
+hash = hashlib.sha512()
+hash.update(bytes('admin', encoding='utf-8'))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+```
+
+### MD5 加盐加密
+
+以上的几个加密算法通过撞库攻击可能会被破解，因此可以在加密时添加自定义的 KEY 进行双重加密。
+
+```python
+import hashlib
+
+# ######## md5 ########
+hash = hashlib.md5(bytes('898oaFs09f', encoding="utf-8"))
+hash.update(bytes('admin', encoding="utf-8"))
+print(hash.hexdigest())  # 输出十六进制的哈希值
+```
+
+### 计算文件 HASH 值
+
+可以通过计算文件的 HASH 值来对比文件是否被修改过，常用于检测文件的完整性。
+
+```python
+import hashlib
+
+# 计算文件的 md5 哈希值
+m = hashlib.md5()
+with open(r'C:/lyshark.png', 'rb') as f:
+    for line in f:
+        m.update(line)
+print(m.hexdigest())  # 输出文件的 md5 哈希值
+
+# 计算另一个文件的 md5 哈希值
+m = hashlib.md5()
+with open(r'D:/lyshark.png', 'rb') as f:
+    for line in f:
+        m.update(line)
+print(m.hexdigest())  # 输出文件的 md5 哈希值
+```
+
+
+
+## SYS 系统模块
+
+Python 的 `SYS` 模块提供访问解释器使用或维护的变量，并与解释器进行交互的函数。通俗来讲，`SYS` 模块负责程序与 Python 解释器的交互，提供了一系列的函数和变量，用于操控 Python 运行时的环境。`SYS` 模块是 Python 默认集成的模块，必须使用。
+
+```python
+import sys
+
+# 命令行参数列表，第一个元素是程序本身路径
+sys.argv
+
+# 退出程序，正常退出时使用 exit(0)
+sys.exit(n)
+
+# 获取 Python 解释器的版本信息
+sys.version
+
+# 返回模块的搜索路径，初始化时使用 PYTHONPATH 环境变量的值
+sys.path
+
+# 返回操作系统平台名称
+sys.platform
+
+# 输入相关
+sys.stdin
+
+# 输出相关
+sys.stdout
+
+# 错误相关
+sys.stderr
+```
+
+### 取出命令行参数
+
+命令行参数列表，第一个元素是程序本身路径，可以遍历出具体传入的参数数量。
+
+```python
+import sys
+
+for x in sys.argv:
+    print(x)
+```
+
+### 判断系统版本
+
+通过使用 `sys.platform`，可以判断当前系统版本。
+
+```python
+import sys
+
+sys.platform
+# 输出：'win32'
+```
+
+### 返回当前模块路径
+
+通过使用 `sys.path`，可以遍历出 Python 的当前路径。
+
+```python
+import sys
+
+# 打印 sys.path 中的每个路径
+for path in sys.path:
+    print(path)
+```
+
+输出示例：
+
+```python
+>>> sys.path[0]
+''
+>>> sys.path[1]
+'C:\\Users\\LyShark\\AppData\\Local\\Programs\\Python\\Python37\\python37.zip'
+>>> sys.path[2]
+'C:\\Users\\LyShark\\AppData\\Local\\Programs\\Python\\Python37\\DLLs'
+>>> sys.path[3]
+'C:\\Users\\LyShark\\AppData\\Local\\Programs\\Python\\Python37\\lib'
+```
+
+### 实现动态进度条
+
+使用标准输入与输出实现动态进度条的一个小实例。
+
+```python
+import sys
+import time
+
+def view_bar(num, total):
+    rate = num / total
+    rate_num = int(rate * 100)
+    r = '\r%s%d%%' % (">" * num, rate_num)
+    sys.stdout.write(r)
+    sys.stdout.flush()
+
+if __name__ == '__main__':
+    for i in range(0, 100):
+        time.sleep(0.1)
+        view_bar(i, 100)
+```
+
+
+
+## OS 基础模块
+
+`OS` 模块提供了多数操作系统的功能接口函数。当 `OS` 模块被导入后，它会自适应于不同的操作系统平台，依据不同平台进行相应操作。在 Python 编程时，常常与文件、目录打交道，因此离不开 `OS` 模块，它也是开发中最常用的模块之一。本节内容将对 `OS` 模块提供的函数进行详细解读，首先来看一下 `OS` 模块的常用函数。
+
+```python
+import os
+
+# 获取当前工作目录，即当前 Python 脚本工作的目录路径
+os.getcwd()
+
+# 改变当前脚本工作目录，相当于 shell 下的 cd
+os.chdir("dirname")
+
+# 返回当前目录: ('.')
+os.curdir
+
+# 获取当前目录的父目录字符串名：('..')
+os.pardir
+
+# 生成多层递归目录，例如生成 ./dir1/dir2
+os.makedirs('dir1/dir2')
+
+# 删除空目录，并递归到上一级目录，若目录也为空，则删除，依此类推
+os.removedirs('dirname')
+
+# 创建目录，创建一个新的目录
+os.mkdir('dirname')
+
+# 删除空目录，若目录不为空则无法删除，报错
+os.rmdir('dirname')
+
+# 列出指定目录下的所有文件和子目录，包括隐藏文件，并以列表方式打印
+os.listdir('dirname')
+
+# 遍历所有目录，包括子目录
+os.walk('dirname')
+
+# 删除文件
+os.remove()
+
+# 重命名文件/目录
+os.rename("oldname", "new")
+
+# 获取文件/目录信息
+os.stat('path/filename')
+```
+
+### 操作系统特性
+
+```python
+# 查系统特定的路径分隔符，Windows 下为 "\\"，Linux 下为 "/"
+os.sep
+
+# 查看字符串指示当前使用平台，Windows 为 'nt'，Linux 为 'posix'
+os.name
+
+# 查看平台使用的行终止符，Windows 为 "\r\n"，Linux 为 "\n"
+os.linesep
+
+# 查看当前用于分割文件路径的字符串
+os.pathsep
+
+# 运行 shell 命令，直接显示，不能保存执行结果
+os.system("shell")
+
+# 运行 shell 命令，可以保存执行结果
+os.popen("shell").read()
+
+# 获取系统环境变量
+os.environ
+```
+
+### 路径操作函数
+
+```python
+# 返回 path 规范化的绝对路径
+os.path.abspath(path)
+
+# 将 path 分割成目录和文件名二元组返回
+os.path.split(path)
+
+# 返回 path 的目录，实际上是 os.path.split(path) 的第一个元素
+os.path.dirname(path)
+
+# 返回 path 最后的文件名，若 path 以 / 或 \ 结尾，则返回空值
+os.path.basename(path)
+
+# 如果 path 存在，返回 True；否则返回 False
+os.path.exists(path)
+
+# 如果 path 是绝对路径，返回 True
+os.path.isabs(path)
+
+# 如果 path 是一个存在的文件，返回 True；否则返回 False
+os.path.isfile(path)
+
+# 如果 path 是一个存在的目录，则返回 True；否则返回 False
+os.path.isdir(path)
+
+# 将多个路径组合后返回，若第一个路径是绝对路径，则前面的路径将被忽略
+os.path.join(path)
+
+# 返回 path 所指向的文件或目录的最后存取时间
+os.path.getatime(path)
+
+# 返回 path 所指向的文件或目录的最后修改时间
+os.path.getmtime(path)
+```
+
+
 
 ## 浏览器自动化
 
