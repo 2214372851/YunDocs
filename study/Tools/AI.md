@@ -26,7 +26,7 @@
 
 ## 衍生工具
 
-### [Jan AI](https://pic.netbian.com/)
+### [Jan AI](https://jan.ai/)
 
 > 本地大模型使用解决方案，界面美观，无中文语言支持
 >

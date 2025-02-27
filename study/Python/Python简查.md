@@ -247,14 +247,14 @@ https://www.gradio.app/
 
 #### Logger（日志记录器）
 
-- • 应用程序代码直接使用的接口
-- • 支持层次结构，可以通过点号分隔创建父子关系（如：app.ui、app.logic）
-- • 提供不同级别的日志记录方法：debug()、info()、warning()、error()、critical()
-- • 可以同时向多个目标输出日志
+- 应用程序代码直接使用的接口
+- 支持层次结构，可以通过点号分隔创建父子关系（如：app.ui、app.logic）
+- 提供不同级别的日志记录方法：debug()、info()、warning()、error()、critical()
+- 可以同时向多个目标输出日志
 
 示例：
 
-```
+```python
 # 创建层次化的logger
 logger = logging.getLogger('app.ui')
 logger.setLevel(logging.DEBUG)
@@ -273,18 +273,18 @@ logger.info('用户操作', extra=extra)
 
 #### Handler（日志处理器）
 
-- • 决定如何处理日志记录
-- • 常用处理器类型：
-    - • FileHandler: 将日志写入文件
-    - • StreamHandler: 将日志输出到控制台
-    - • RotatingFileHandler: 支持日志文件轮转
-    - • SMTPHandler: 通过邮件发送日志
-    - • SysLogHandler: 将日志发送到系统日志
-- • 每个Handler可以有自己的日志级别和格式化器
+- 决定如何处理日志记录
+- 常用处理器类型：
+    - FileHandler: 将日志写入文件
+    - StreamHandler: 将日志输出到控制台
+    - RotatingFileHandler: 支持日志文件轮转
+    - SMTPHandler: 通过邮件发送日志
+    - SysLogHandler: 将日志发送到系统日志
+- 每个Handler可以有自己的日志级别和格式化器
 
 示例：
 
-```
+```python
 # 文件处理器
 file_handler = logging.FileHandler('app.log')
 file_handler.setLevel(logging.INFO)
@@ -313,15 +313,15 @@ smtp_handler.setLevel(logging.ERROR)  # 只发送错误及以上级别的日志
 
 #### Filter（过滤器）
 
-- • 提供更细粒度的日志控制
-- • 可以基于以下条件过滤日志：
-    - • 日志记录的属性（如模块名、函数名）
-    - • 自定义的业务逻辑
-    - • 特定的日志模式
+- 提供更细粒度的日志控制
+- 可以基于以下条件过滤日志：
+    - 日志记录的属性（如模块名、函数名）
+    - 自定义的业务逻辑
+    - 特定的日志模式
 
 示例：
 
-```
+```python
 class UserFilter(logging.Filter):
     """只记录特定用户的日志"""
     def __init__(self, user_id):
@@ -346,23 +346,23 @@ logger.addFilter(SensitiveFilter())
 
 #### Formatter（格式化器）
 
-- • 定义日志记录的最终格式
-- • 常用的格式化属性：
-    - • %(asctime)s: 时间戳
-    - • %(name)s: 日志记录器名称
-    - • %(levelname)s: 日志级别
-    - • %(message)s: 日志消息
-    - • %(pathname)s: 完整路径名
-    - • %(filename)s: 文件名
-    - • %(module)s: 模块名
-    - • %(funcName)s: 函数名
-    - • %(lineno)d: 行号
-    - • %(process)d: 进程ID
-    - • %(thread)d: 线程ID
+- 定义日志记录的最终格式
+- 常用的格式化属性：
+    - %(asctime)s: 时间戳
+    - %(name)s: 日志记录器名称
+    - %(levelname)s: 日志级别
+    - %(message)s: 日志消息
+    - %(pathname)s: 完整路径名
+    - %(filename)s: 文件名
+    - %(module)s: 模块名
+    - %(funcName)s: 函数名
+    - %(lineno)d: 行号
+    - %(process)d: 进程ID
+    - %(thread)d: 线程ID
 
 示例：
 
-```
+```python
 # 基础格式化器
 basic_formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -397,44 +397,44 @@ console_handler.setFormatter(basic_formatter)
 
 Python logging模块定义了以下标准日志级别（从低到高）：
 
-1. 1. **DEBUG (10)**
+1. **DEBUG (10)**
 
-    ```
+    ```python
     logger.debug('数据库查询耗时: %s秒', query_time)
     logger.debug(f'用户输入参数: {user_input}')
     ```
 
-    - • 详细的调试信息
-    - • 适用场景：
-        - • 问题诊断
-        - • 开发过程中的变量跟踪
-        - • 程序流程追踪
+    - 详细的调试信息
+    - 适用场景：
+        - 问题诊断
+        - 开发过程中的变量跟踪
+        - 程序流程追踪
 
-2. 2. **INFO (20)**
+2. **INFO (20)**
 
-    ```
+    ```python
     logger.info('应用程序启动成功')
     logger.info('用户%s完成订单%s', user_id, order_id)
     ```
 
-    - • 确认程序按预期运行的信息
-    - • 适用场景：
-        - • 程序启动/关闭
-        - • 重要业务流程的完成
-        - • 系统状态变更
+    - 确认程序按预期运行的信息
+    - 适用场景：
+        - 程序启动/关闭
+        - 重要业务流程的完成
+        - 系统状态变更
 
-3. 3. **WARNING (30)**
+3. **WARNING (30)**
 
-    ```
+    ```python
     logger.warning('配置文件不完整，使用默认配置')
     logger.warning('磁盘使用率超过80%')
     ```
 
-    - • 表示可能的问题，但程序仍在正常运行
-    - • 适用场景：
-        - • 配置文件缺失但使用了默认值
-        - • 功能即将弃用提醒
-        - • 系统资源不足预警
+    - 表示可能的问题，但程序仍在正常运行
+    - 适用场景：
+        - 配置文件缺失但使用了默认值
+        - 功能即将弃用提醒
+        - 系统资源不足预警
 
 4. **ERROR (40)**
 
@@ -445,11 +445,11 @@ Python logging模块定义了以下标准日志级别（从低到高）：
         logger.error('API调用失败: %s', str(e), exc_info=True)
     ```
 
-    - • 由于严重问题，程序的某些功能已经不能正常执行
-    - • 适用场景：
-        - • 数据库连接失败
-        - • API调用异常
-        - • 重要业务流程失败
+    - 由于严重问题，程序的某些功能已经不能正常执行
+    - 适用场景：
+        - 数据库连接失败
+        - API调用异常
+        - 重要业务流程失败
 
 5. **CRITICAL (50)**
 
@@ -458,15 +458,15 @@ Python logging模块定义了以下标准日志级别（从低到高）：
     logger.critical('系统内存不足，无法继续处理请求')
     ```
 
-    - • 程序本身可能无法继续运行的严重问题
-    - • 适用场景：
-        - • 系统内存耗尽
-        - • 主要组件无响应
-        - • 数据损坏
+    - 程序本身可能无法继续运行的严重问题
+    - 适用场景：
+        - 系统内存耗尽
+        - 主要组件无响应
+        - 数据损坏
 
 ### 日志级别的最佳实践
 
-1. 1. **级别选择原则**
+1. **级别选择原则**
 
     ```python
     # 根据环境设置不同的日志级别
@@ -476,7 +476,7 @@ Python logging模块定义了以下标准日志级别（从低到高）：
         logger.setLevel(logging.WARNING)
     ```
 
-2. 2. **自定义日志级别**
+2. **自定义日志级别**
 
     ```python
     # 定义介于INFO和WARNING之间的日志级别
@@ -489,7 +489,7 @@ Python logging模块定义了以下标准日志级别（从低到高）：
     logging.Logger.trace = trace
     ```
 
-3. 3. **级别继承关系**
+3. **级别继承关系**
 
     ```python
     # 父logger的级别会影响子logger
@@ -768,19 +768,19 @@ loggers:
 ### 最佳实践建议
 
 1. **命名规范**
-    - • 使用模块级别的logger: `logger = logging.getLogger(__name__)`
-    - • 为不同组件使用有意义的logger名称
+    - 使用模块级别的logger: `logger = logging.getLogger(__name__)`
+    - 为不同组件使用有意义的logger名称
 2. **异常处理**
-    - • 始终使用`exception()`方法记录异常
-    - • 包含足够的上下文信息
+    - 始终使用`exception()`方法记录异常
+    - 包含足够的上下文信息
 3. **性能考虑**
-    - • 使用异步日志处理器处理大量日志
-    - • 合理设置日志级别
-    - • 使用日志轮转避免文件过大
+    - 使用异步日志处理器处理大量日志
+    - 合理设置日志级别
+    - 使用日志轮转避免文件过大
 4. **安全性**
-    - • 永远不要记录敏感信息
-    - • 实施访问控制
-    - • 定期归档和清理日志
+    - 永远不要记录敏感信息
+    - 实施访问控制
+    - 定期归档和清理日志
 
 ### 常见陷阱与解决方案
 
@@ -2016,7 +2016,7 @@ process = Popen(
 
 ## 网络请求
 
-### [miquests](https://niquests.readthedocs.io/en/stable/)
+### [Niquests](https://niquests.readthedocs.io/en/stable/)
 
 > Niquests 是一个简单而优雅的 HTTP 客户端, 简单说它是 Requests 的直接替代品。 因为多年来Requests 功能一直处于停滞不前的状态，由于不前进的状态并且没有发展，这阻止了数百万开发人员使用更高级的功能，所以就有了Niquests, Niquests 是唯一能够自动提供 HTTP/1.1、HTTP/2 和 HTTP/3 的 HTTP 客户端, 该项目深入研究了协议（早期响应、尾部标头等）和所有相关的网络基本要素（如 DNS-over-HTTPS、高级性能计量等，而且Niquests是最安全，最快，最简单和最先进的Python HTTP 客户端。
 
@@ -2716,6 +2716,10 @@ obj.finditer(b)
 ```
 
 ## 浏览器自动化
+
+`undetected_chromedriver` 自动匹配自动化驱动
+
+`DrissionPage` 功能强大，语法简洁优雅，代码量少，对新手友好（[官网](https://drissionpage.cn/)）。
 
 ```python
 from selenium.webdriver import Chrome
@@ -4327,12 +4331,6 @@ os.path.getmtime(path)
 ```
 
 
-
-## 浏览器自动化
-
-undetected_chromedriver
-
-可以自动匹配驱动
 
 ## 上下文管理（contextlib）
 
