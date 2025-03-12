@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import confetti from "canvas-confetti";
+import {onMounted} from 'vue';
 
 
 let end = Date.now() + (5 * 1000);
 
 let colors = ['#E999AB', '#E65367', '#CCA4E3', '#2ADD9C'];
 
-(function frame() {
+
+onMounted(() => {
+  frame()
+})
+
+function frame() {
   confetti({
     particleCount: 4,
     angle: 60,
@@ -29,5 +35,5 @@ let colors = ['#E999AB', '#E65367', '#CCA4E3', '#2ADD9C'];
   if (Date.now() < end) {
     requestAnimationFrame(frame);
   }
-}());
+}
 </script>
