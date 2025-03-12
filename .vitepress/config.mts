@@ -1,22 +1,26 @@
 import {RSSOptions, RssPlugin} from "vitepress-plugin-rss";
-import { withMermaid } from "vitepress-plugin-mermaid";
+import {withMermaid} from "vitepress-plugin-mermaid";
 import fs from 'fs';
 import path from 'path';
 
 // 动态读取目录函数
 function getDirFiles(dirPath: string, ext: string = '.md') {
     const files = fs.readdirSync(dirPath).filter(file => file.endsWith(ext));
+    let flag = 'repo'
+    if (!dirPath.includes(flag)) {
+        flag = 'YunHai-Docs'
+    }
     return files.map(file => ({
         text: file.replace(ext, ''),
-        link: `${dirPath.split('YunHai-Docs')[1].replace(/\\/g, '/')}/${file.replace(ext, '')}`
+        link: `${dirPath.split(flag)[1].replace(/\\/g, '/')}/${file.replace(ext, '')}`
     }));
 }
 
 function getNestedDirs(basePath: string) {
-    const dirs = fs.readdirSync(basePath, { withFileTypes: true })
+    const dirs = fs.readdirSync(basePath, {withFileTypes: true})
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name);
-    
+
     return dirs.map(dir => {
         const fullPath = path.join(basePath, dir);
         const files = getDirFiles(fullPath);
