@@ -99,6 +99,16 @@ export default withMermaid({
                     ]
                 },
                 {
+                    text: 'Job Hive',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: '简介',
+                            link: '/modules/job-hive'
+                        }
+                    ]
+                },
+                {
                     text: 'D0 Tools',
                     collapsed: true,
                     items: [
