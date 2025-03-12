@@ -1,232 +1,351 @@
 # 快速开始
 
-::: warning
-从最初版本至今 yundownload 都支持多线程与协程，作者太懒，没有时间维护，所以文档中未提及。
-协程大部分API保持与多线程一致，少许 API 需要在参数或函数前添加 `a` 
-例如： 
+> 由于 YunDownload 在经历了大大小小多次更改导致代码过于杂乱，所以于 0.6.0 版本引入设计模式重构了该项目，并且去除了一些冗余代码。
 
-`success_callback` > `asuccess_callback`。
-:::
+## 安装
 
-## 版本说明
+您可以通过 `pip` 直接安装本模块
 
-由于在 YunDownload V0.4.x 版本中，YunDownloader 处于性能原因 API 发生变化 所以抽离的两份快速开始文档。
-
-变化如下：
-
-- `YunDownloader` API已经移除采用全新实现
-- 现在添加下载任务不会阻塞主线程，可以实现多文件异步下载
-
-## 并发限制
-
-对于大型资源下载，您可能需要使用对本地的连接限制来避免文件服务器过载。
-
-您可以通过以下方式进行限制......
-
-```python
-from yundownload import DownloadPools
-
-with DownloadPools(max_workers=5) as pool:
-    ...
+```bash
+pip install yundownload
 ```
 
-## 状态回调
+如果您已经安装，那么可以通过如下命令更新
 
-在某些情况下我们需要下载成功或失败时完成后续操作。
+```bash
+pip install yundownload --upgrade
+```
+
+## 快速使用
 
 ```python
-from yundownload import Request
+from yundownload import Downloader, Resources
 
-Request(
-    url='',
-    save_path='',
-    success_callback=print,
-    error_callback=print
+if __name__ == '__main__':
+    with Downloader() as d:
+        r1 = d.submit(Resources(
+            uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+            save_path="DeepSeek-R1-AWQ/model-00074-of-00074.safetensors"
+        ))
+        r2 = d.submit(Resources(
+            uri='ftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip',
+            save_path='0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip'
+        ))
+        r3 = d.submit(Resources(
+            uri='sftp://root:password@127.0.0.1/root/quick_start.sh',
+            save_path='quick_start.sh'
+        ))
+        r4 = d.submit(Resources(
+            uri='https://c1.7bbffvip.com/video/xiantaiyoushu/%E7%AC%AC01%E9%9B%86/index.m3u8',
+            save_path='./video/download.mp4'
+        ))
+    print(r1.result(), r2.result(), r3.result(), r4.result())
+```
+
+如你所见，该版本可以支持 `http`、`sftp`、`ftp` 以及 `m3u8` 视频的下载
+
+## 资源参数
+
+### 请求方式（HTTP 与 M3U8 可用）
+
+目前支持的请求方式有 `GET`、`POST`、`PUT`、`DELETE`，默认为 `GET` 请求。
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_method="GET"
 )
 ```
 
-## 请求传参
+### 请求参数（HTTP 与 M3U8 可用）
 
-目前 Yun download 可以在 `Request` 对象中传递。
-
-```python
-from yundownload import DownloadPools, Request
-
-with DownloadPools() as pool:
-    pool.push(Request(
-        url='',
-        save_path='',
-        params={}
-    ))
-```
-
-## 认证
-
-对于部分需要在请求中校验身份信息的，需要通过 `auth` 携带身份信息。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求参数以字典的形式传入
 
 ```python
-from yundownload import Auth, Request
+from yundownload import Resources
 
-Request(
-    url='',
-    save_path='',
-    auth=Auth(username='', password='')
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_params={
+        "page": "1"
+    }
 )
 ```
 
-## 超时
+### 请求数据
 
-在不同网络或不同站点下，由于网络波动、资源限制等问题需要改动超时时间，默认为 `20` 秒。
-
-由于初衷是大文件下载，对于小文件可适当修改时间。
-
-你可以在实例化下载器时传递全局参数，也可以在 `Request` 对象中传递。
+请求数据以字典的形式传入
 
 ```python
-from yundownload import Request
+from yundownload import Resources
 
-Request(
-    url='',
-    save_path='',
-    timeout=20
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_data={
+        "data": "test"
+    }
 )
 ```
 
-## 请求头
+### 请求代理（HTTP 与 M3U8 可用）
 
-可以通过设置请求头来为请求携带一些信息如：`cookies` 、`Content-Type`等。
-
-你可以在实例化下载器时传递全局参数，也可以在 `Request` 对象中传递。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求代理以字典的形式传入
 
 ```python
-from yundownload import Request
+from yundownload import Resources
 
-Request(
-    url='https://dldir1.qq.com/qqfile/qq/PCQQ9.7.17/QQ9.7.17.29225.exe',
-    save_path='QQ9.7.17.29225.exe',
-    headers={'token': '***'}
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_proxy={
+        "http": "http://127.0.0.1:8080",
+        "https": "https://127.0.0.1:8080"
+    }
 )
 ```
 
-## Cookies
+### 请求头（HTTP 与 M3U8 可用）
 
-当然你也可以将 `cookies` 放到请求头中。
-
-你可以在实例化下载器时传递全局参数，也可以在 `Request` 对象中传递。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求头以字典的形式传入
 
 ```python
-from yundownload import Request
+from yundownload import Resources
 
-Request(
-    url='https://dldir1.qq.com/qqfile/qq/PCQQ9.7.17/QQ9.7.17.29225.exe',
-    save_path='QQ9.7.17.29225.exe',
-    cookies={'**': '***'}
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
 )
 ```
 
-## 流模式
+### 请求 cookie（HTTP 与 M3U8 可用）
 
-默认模式为根据文件大小自动选择分片下载或流式限制，如果需要强制使用流模式，可以设置 `stream` 参数为 `True`。
-
-你可以在实例化下载器时传递全局参数，也可以在 `Request` 对象中设置。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求时携带的 cookie
 
 ```python
-from yundownload import Request
+from yundownload import Resources
 
-request = Request(
-    url='https://dldir1.qq.com/qqfile/qq/PCQQ9.7.17/QQ9.7.17.29225.exe',
-    save_path='QQ9.7.17.29225.exe'
-)
-request.stream = True
-```
-
-## 重定向
-
-默认情况下，YunDownloader 会自动处理重定向，如果需要禁用重定向，可以将 `follow_redirects` 参数设置为 `False`。
-否则就是最大重定向次数。
-
-```python
-from yundownload import Request
-
-request = Request(
-    url='https://dldir1.qq.com/qqfile/qq/PCQQ9.7.17/QQ9.7.17.29225.exe',
-    save_path='QQ9.7.17.29225.exe',
-    follow_redirects=True
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_cookies={
+        "name": "value"
+    }
 )
 ```
 
-## 错误重试
+### 请求超时（HTTP 与 M3U8 可用）
 
-YunDownloader 默认会自动重试下载，如果需要禁用重试，可以将 `retry` 参数设置为 `1` 或不传递。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求超时以秒为单位传入
 
 ```python
-from yundownload import DownloadPools, Retry
+from yundownload import Resources
 
-with DownloadPools(retry=Retry(retry=2, retry_delay=10, retry_connect=10)) as poll:
-    ...
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_timeout=10
+)
 ```
 
-## 证书
+### 请求认证（HTTP 与 M3U8 可用）
 
-Yun download 默认会自动处理证书，如果需要禁用证书，可以将 `verify` 参数设置为 `False`。
+目前可应用于 `http` 以及 `m3u8` 请求中，请求认证以元组的形式传入
 
 ```python
-from yundownload import DownloadPools, Retry
+from yundownload import Resources
 
-with DownloadPools(verify=False) as poll:
-    ...
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_auth=("username", "password")
+)
 ```
 
-## 代理
+### 切片阈值（仅HTTP可用）
+
+切片阈值以字节为单位传入
 
 ```python
-from yundownload import DownloadPools, Proxies
+from yundownload import Resources
 
-with DownloadPools(proxies=Proxies(http='http://127.0.0.1:7890', https='http://127.0.0.1:7890')) as poll:
-    ...
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="model-00074-of-00074.safetensors",
+    http_slice_threshold=1024 * 1024 * 1024
+)
+```
+
+### FTP 连接超时（仅FTP可用）
+
+FTP 连接超时以秒为单位传入
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="ftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    ftp_timeout=10
+)
+```
+
+### FTP 端口（仅FTP可用）
+
+FTP 端口传入，或者你也可以通过uri携带
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="ftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    ftp_port=21
+)
+```
+
+### SFTP 端口（仅SFTP可用）
+
+FTP 端口传入，或者你也可以通过uri携带
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="sftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    sftp_port=21
+)
+```
+
+### 拓展元数据（拓展）
+
+拓展元数据以字典的形式传入，可以用于为自定义的下载协议携带自定义的元数据
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="sftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    metadata={
+        "name": "value"
+    }
+)
+```
+
+### 重试次数（全局可用）
+
+重试次数以整数的形式传入
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="sftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    retry=3
+)
+```
+
+### 重试间隔（全局可用）
+
+重试次数以整数或元组（start 到 end 随机间隔）的形式传入
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="sftp://ftpuser:password@127.0.0.1/data/spider_temp/0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    save_path="0f03dc87-57ec-4278-bf95-15d4a1ad90d3.zip",
+    retry_delay=3  # (5, 10)
+)
+```
+
+### 自适应异步并发信号（HTTP 与 M3U8 可用）
+
+目前可应用于 `http` 以及 `m3u8` 请求中，`min_concurrency` 默认为 1，`max_concurrency` 默认为 30，`window_size` 自适应并发窗口大小。
+
+```python
+from yundownload import Resources
+
+Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="/test_files/http/DeepSeek-R1-AWQ/model-00074-of-00074.safetensors",
+    min_concurrency=1,
+    max_concurrency=30,
+    window_size=100
+)
 ```
 
 ## 日志
 
-Yun download 默认会禁用日志，如果需要显示日志，可以调用 `show_log`，并输出到控制台， `write_log(filepath)` 输出到文件，
-`logger` 获取日志对象。
+你可以通过引用 `yundownload.logger` 来获取日志对象，并且内置了一些日志方法，
+你可以通过 `logger.resource_start`、`logger.resource_result`、`logger.resource_error`、`logger.resource_exist`、
+`logger.resource_log` 来记录资源下载的日志。
 
 ```python
-from yundownload.logger import show_log, write_log, logger
+from yundownload import logger, Resources, Result
 
+resource = Resources(
+    uri="https://hf-mirror.com/cognitivecomputations/DeepSeek-R1-AWQ/resolve/main/model-00074-of-00074.safetensors?download=true",
+    save_path="/test_files/http/DeepSeek-R1-AWQ/model-00074-of-00074.safetensors"
+)
+
+logger.info('log')
+logger.resource_start(resource)
+logger.resource_result(resource, Result.SUCCESS)
+logger.resource_error(resource, ValueError('...'))
+logger.resource_exist(resource)
+logger.resource_log(resource, 'log')
 ```
 
+## 拓展
 
-## 进度条
-
-Yun download cli 工具中实现。
+你可以继承 `yundownload.network.base.BaseProtocolHandler` 来拓展下载协议，
+然后通过 `Downloader().add_protocol(MyProtocolHandler)` 来注册协议，
+具体实现你可以参考如下示例
 
 ```python
-from yundownload import render_ui, Request
+from yundownload.network.base import BaseProtocolHandler
+from yundownload import Result
 
-render_ui([Request(url='', save_path=''), ])
+
+class MyProtocolHandler(BaseProtocolHandler):
+    @staticmethod
+    def check_protocol(uri: str) -> bool:
+        """
+        检查uri是否被当前下载协议支持，如果支持则返回 True
+        """
+        pass
+
+    def download(self, resources: 'Resources') -> 'Result':
+        """
+        你可以在此实现下载逻辑，但你需要返回 Result，此处下载失败直接抛出错误即可，成功的话请返以下的 Result
+        """
+        return Result.SUCCESS
+
+    def close(self):
+        """
+        清理服务残留
+        """
+        pass
 ```
 
-## 状态
+## 锁定协议
 
-通过 `request.status` 可获取当前执行状态。
+你可以通过 `lock_protocol` 方法来锁定下载协议，这样就不会再去调用资源的check来判断该选择哪一个下载协议
 
 ```python
-from yundownload import Request
-request = Request(url='', save_path='')
-print(request.status)
-```
+from yundownload import Downloader
 
-## 下载状态
-
-通过 `request.stat` 可获取当前下载状态。
-
-```python
-from yundownload import Request
-
-request = Request(url='', save_path='')
-print('下载进度', request.stat.percentage)
-print('每秒下载字节', request.stat.speed)
-print('开始时间', request.stat.start_time)
-print('结束时间', request.stat.end_time)
-```
+with Downloader() as d:
+    d.lock_protocol(MyProtocolHandler)
+```xxxxxxxxxx from yundownload import Requestrequest = Request(url='', save_path='')print('下载进度', request.stat.percentage)print('每秒下载字节', request.stat.speed)print('开始时间', request.stat.start_time)print('结束时间', request.stat.end_time)python
